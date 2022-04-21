@@ -5,7 +5,7 @@ import pandas as pd
 import tensorflow as tf
 from sklearn.metrics import accuracy_score, precision_score, recall_score
 from sklearn.model_selection import train_test_split
-from tensorflow.keras import layers, losses
+from tensorflow.keras import layers, losses, utils
 from tensorflow.keras.datasets import fashion_mnist
 from tensorflow.keras.models import Model
 import numpy as np
@@ -17,7 +17,7 @@ import os
 # %%
 
 DATASET = "dataset/cwru/0"
-CLASSES = ["normal", "B007", "IR007"]
+CLASSES = sorted(["normal", "B007", "IR007"])
 INPUT_LENGTH = 800
 
 
@@ -48,29 +48,37 @@ for i, cl in enumerate(CLASSES):
     Y += [i] * len(cl_samples)
 
 X = np.array(X)
-Y = np.array(Y)
+Y = np.array(utils.to_categorical(Y))
 X.shape, Y.shape
 
 # %%
-X_train, X_test = train_test_split(X, test_size=0.2, random_state=42)
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
 print(f'{X_train.shape=} {X_test.shape=}')
+print(f'{Y_train.shape=} {Y_test.shape=}')
 
 # %%
 
 
-def model():
-    x = input_tensor = tf.keras.Input(shape=(N, 1), name="raw_signal")
+def model(input_length):
+    x = input_tensor = tf.keras.Input(shape=(input_length, 1), name="raw_signal")
 
     # Encoder
     x = layers.Conv1D(filters=32, kernel_size=2, padding="same", activation="relu")(x)
     x = layers.MaxPool1D(2)(x)
-    x = layers.Conv1D(filters=64, kernel_size=2, padding="same", activation="relu")(x)
-    embeddings = x = layers.MaxPool1D(2)(x)
+    x = layers.Conv1D(filters=32, kernel_size=2, padding="same", activation="relu")(x)
+    x = layers.MaxPool1D(2)(x)
+    x = layers.Conv1D(filters=32, kernel_size=2, padding="same", activation="relu")(x)
+    x = layers.MaxPool1D(2)(x)
+    embeddings = layers.Flatten()(x)
 
-    x = layers.UpSampling1D(2)(x)
-    x = layers.Conv1DTranspose(filters=32, kernel_size=2, padding="same")(x)
-    x = layers.UpSampling1D(2)(x)
-    x = layers.Conv1DTranspose(filters=1, kernel_size=2, padding="same")(x)
+    # x = layers.UpSampling1D(2)(x)
+    # x = layers.Conv1DTranspose(filters=32, kernel_size=2, padding="same")(x)
+    # x = layers.UpSampling1D(2)(x)
+    # x = layers.Conv1DTranspose(filters=1, kernel_size=2, padding="same")(x)
+
+    x = layers.Dense(10)(embeddings)
+    x = layers.Dense(3, activation="softmax")(x)
+
     output = x
     return tf.keras.Model(
         inputs=[input_tensor],
@@ -78,19 +86,19 @@ def model():
     )
 
 
-autoencoder = model()
-autoencoder.summary()
+m = model(INPUT_LENGTH)
+m.summary()
 
 
 # %%
 
-autoencoder.compile(optimizer='adam', loss='mae')
+m.compile(optimizer='adam', loss='categorical_crossentropy')
 
-history = autoencoder.fit(X_train, X_train,
-                          epochs=200,
-                          batch_size=512,
-                          validation_data=(X_test, X_test),
-                          shuffle=True)
+history = m.fit(X_train, Y_train,
+                epochs=200,
+                batch_size=512,
+                validation_data=(X_test, Y_test),
+                shuffle=True)
 
 # %%
 plt.plot(history.history["loss"], label="Training Loss")
