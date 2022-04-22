@@ -13,21 +13,31 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from scipy.io import loadmat
 import os
+import glob
 
 # %%
 
 DATASET = "dataset/cwru/0"
-CLASSES = sorted(["normal", "B007", "IR007"])
+CLASSES_FILES = {
+    "Normal": "normal*.mat",
+    "Ball": "B*.mat",
+    "Inner race": "IR*.mat",
+    "Outer race": "OR*.mat"
+}
+CLASSES = sorted(CLASSES_FILES.keys())
 INPUT_LENGTH = 800
+# %%
 
 
-def read_class_mat_file(cl_path: str):
+def read_class_mat_file(cl_files_regx: str):
     """Read classname.mat and extract data collected by DE sensor"""
-    cl_data = loadmat(cl_path)
-    # Available sensors are DE, FE, BA. Pick only DE
-    key = [k for k in cl_data.keys() if "DE" in k][0]
-    de_data = cl_data[key]
-    return de_data.flatten()
+    sensor_data = []
+    for cl_path in glob.glob(cl_files_regx):
+        cl_data = loadmat(cl_path)
+        # Available sensors are DE, FE, BA. Pick only DE
+        key = [k for k in cl_data.keys() if "DE" in k][0]
+        sensor_data += list(cl_data[key].flatten())
+    return sensor_data
 
 
 def split_into_samples(cl_data: np.array, length: int):
@@ -41,9 +51,14 @@ def split_into_samples(cl_data: np.array, length: int):
 X = []
 Y = []
 for i, cl in enumerate(CLASSES):
-    cl_path = os.path.join(DATASET, cl + ".mat")
-    cl_data = read_class_mat_file(cl_path)
-    cl_samples = list(split_into_samples(cl_data, INPUT_LENGTH))
+    print(f'Loading class {cl}')
+    # One class can be split into multiple .mat files, so load them all
+    cl_file_regx = os.path.join(DATASET, CLASSES_FILES[cl])
+    cl_samples = []
+    for cl_path in glob.glob(cl_file_regx):
+        print(f'{cl_path}')
+        cl_data = read_class_mat_file(cl_path)
+        cl_samples += list(split_into_samples(cl_data, INPUT_LENGTH))
     X += cl_samples
     Y += [i] * len(cl_samples)
 
@@ -77,7 +92,7 @@ def model(input_length):
     # x = layers.Conv1DTranspose(filters=1, kernel_size=2, padding="same")(x)
 
     x = layers.Dense(10)(embeddings)
-    x = layers.Dense(3, activation="softmax")(x)
+    x = layers.Dense(4, activation="softmax")(x)
 
     output = x
     return tf.keras.Model(
@@ -95,7 +110,7 @@ m.summary()
 m.compile(optimizer='adam', loss='categorical_crossentropy')
 
 history = m.fit(X_train, Y_train,
-                epochs=200,
+                epochs=50,
                 batch_size=512,
                 validation_data=(X_test, Y_test),
                 shuffle=True)
@@ -106,3 +121,13 @@ plt.plot(history.history["val_loss"], label="Validation Loss")
 plt.legend()
 
 # %%
+
+
+def print_stats(predictions, labels):
+    print("Accuracy = {}".format(accuracy_score(labels, predictions)))
+    # print("Precision = {}".format(precision_score(labels, predictions)))
+    # print("Recall = {}".format(recall_score(labels, predictions)))
+
+
+y_hat = m(X_test)
+print_stats(np.argmax(y_hat, axis=1), np.argmax(Y_test, axis=1))

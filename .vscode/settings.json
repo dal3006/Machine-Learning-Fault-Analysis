@@ -1,6 +1,6 @@
 {
     "jupyter.jupyterServerType": "local",
-    "python.linting.pylintEnabled": false,
-    "python.linting.pylamaEnabled": true,
+    "python.linting.pylintEnabled": true,
+    "python.linting.pylamaEnabled": false,
     "python.linting.enabled": true
 }
