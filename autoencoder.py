@@ -17,14 +17,19 @@ import glob
 
 # %%
 
-DATASET = "dataset/cwru/0"
-CLASSES_FILES = {
-    "Normal": "normal*.mat",
-    "Ball": "B*.mat",
-    "Inner race": "IR*.mat",
-    "Outer race": "OR*.mat"
+CWRUA = {
+    "Normal": "dataset/cwru/0/normal*.mat",
+    "Ball": "dataset/cwru/0/B*.mat",
+    "Inner race": "dataset/cwru/0/IR*.mat",
+    "Outer race": "dataset/cwru/0/OR*.mat"
 }
-CLASSES = sorted(CLASSES_FILES.keys())
+CWRUB = {
+    "Normal": "dataset/cwru/3/normal*.mat",
+    "Ball": "dataset/cwru/3/B*.mat",
+    "Inner race": "dataset/cwru/3/IR*.mat",
+    "Outer race": "dataset/cwru/3/OR*.mat"
+}
+CLASSES = sorted(CWRUA.keys())
 INPUT_LENGTH = 800
 # %%
 
@@ -48,28 +53,33 @@ def split_into_samples(cl_data: np.array, length: int):
     return np.array(X).reshape((-1, length))
 
 
-X = []
-Y = []
-for i, cl in enumerate(CLASSES):
-    print(f'Loading class {cl}')
-    # One class can be split into multiple .mat files, so load them all
-    cl_file_regx = os.path.join(DATASET, CLASSES_FILES[cl])
-    cl_samples = []
-    for cl_path in glob.glob(cl_file_regx):
-        print(f'{cl_path}')
-        cl_data = read_class_mat_file(cl_path)
-        cl_samples += list(split_into_samples(cl_data, INPUT_LENGTH))
-    X += cl_samples
-    Y += [i] * len(cl_samples)
+def read_dataset(class_files):
+    X = []
+    Y = []
+    for i, cl in enumerate(CLASSES):
+        print(f'[{i}] Loading class {cl}')
+        # One class can be split into multiple .mat files, so load them all
+        cl_samples = []
+        for cl_path in glob.glob(class_files[cl]):
+            print(f'{cl_path}')
+            cl_data = read_class_mat_file(cl_path)
+            cl_samples += list(split_into_samples(cl_data, INPUT_LENGTH))
+        X += cl_samples
+        Y += [i] * len(cl_samples)
 
-X = np.array(X)
-Y = np.array(utils.to_categorical(Y))
-X.shape, Y.shape
+    X = np.array(X)
+    Y = np.array(utils.to_categorical(Y))
+    return X, Y
+
+
+X_train, y_train = read_dataset(CWRUA)
+X_test, y_test = read_dataset(CWRUB)
+
 
 # %%
-X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
-print(f'{X_train.shape=} {X_test.shape=}')
-print(f'{Y_train.shape=} {Y_test.shape=}')
+# X_train, X_test, y_train, y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
+# print(f'{X_train.shape=} {X_test.shape=}')
+# print(f'{y_train.shape=} {y_test.shape=}')
 
 # %%
 
@@ -109,10 +119,10 @@ m.summary()
 
 m.compile(optimizer='adam', loss='categorical_crossentropy')
 
-history = m.fit(X_train, Y_train,
+history = m.fit(X_train, y_train,
                 epochs=50,
                 batch_size=512,
-                validation_data=(X_test, Y_test),
+                validation_data=(X_test, y_test),
                 shuffle=True)
 
 # %%
@@ -130,4 +140,4 @@ def print_stats(predictions, labels):
 
 
 y_hat = m(X_test)
-print_stats(np.argmax(y_hat, axis=1), np.argmax(Y_test, axis=1))
+print_stats(np.argmax(y_hat, axis=1), np.argmax(y_test, axis=1))
