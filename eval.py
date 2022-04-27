@@ -1,12 +1,13 @@
-# %%
-import os
 import glob
+from pdb import post_mortem
 from scipy.io import loadmat
 import numpy as np
-from tensorflow.keras import layers, losses, utils
+from tensorflow.keras import utils
+import seaborn as sns
+import matplotlib.pyplot as plt
 
-# %%
 BASE_PATH = "dataset/cwru"
+
 DATASETS = {
     'DE007': {
         'sensor': 'DE',
@@ -15,6 +16,60 @@ DATASETS = {
             "Ball": "dataset/cwru/*/B007.mat",
             "Inner race": "dataset/cwru/*/IR007.mat",
             "Outer race": "dataset/cwru/*/OR007@*.mat"
+        }
+    },
+    'DE014': {
+        'sensor': 'DE',
+        'classes': {
+            "Normal": "dataset/cwru/*/normal.mat",
+            "Ball": "dataset/cwru/*/B014.mat",
+            "Inner race": "dataset/cwru/*/IR014.mat",
+            "Outer race": "dataset/cwru/*/OR014@*.mat"
+        }
+    },
+    'DE021': {
+        'sensor': 'DE',
+        'classes': {
+            "Normal": "dataset/cwru/*/normal.mat",
+            "Ball": "dataset/cwru/*/B021.mat",
+            "Inner race": "dataset/cwru/*/IR021.mat",
+            "Outer race": "dataset/cwru/*/OR021@*.mat"
+        }
+    },
+    'FE007': {
+        'sensor': 'FE',
+        'classes': {
+            "Normal": "dataset/cwru/*/normal.mat",
+            "Ball": "dataset/cwru/*/B007.mat",
+            "Inner race": "dataset/cwru/*/IR007.mat",
+            "Outer race": "dataset/cwru/*/OR007@*.mat"
+        }
+    },
+    'FE014': {
+        'sensor': 'FE',
+        'classes': {
+            "Normal": "dataset/cwru/*/normal.mat",
+            "Ball": "dataset/cwru/*/B014.mat",
+            "Inner race": "dataset/cwru/*/IR014.mat",
+            "Outer race": "dataset/cwru/*/OR014@*.mat"
+        }
+    },
+    'FE021': {
+        'sensor': 'FE',
+        'classes': {
+            "Normal": "dataset/cwru/*/normal.mat",
+            "Ball": "dataset/cwru/*/B021.mat",
+            "Inner race": "dataset/cwru/*/IR021.mat",
+            "Outer race": "dataset/cwru/*/OR021@*.mat"
+        }
+    },
+    'DE': {
+        'sensor': 'DE',
+        'classes': {
+            "Normal": "dataset/cwru/*/normal.mat",
+            "Ball": "dataset/cwru/*/B*.mat",
+            "Inner race": "dataset/cwru/*/IR*.mat",
+            "Outer race": "dataset/cwru/*/OR*@*.mat"
         }
     },
     'FE': {
@@ -27,6 +82,22 @@ DATASETS = {
         }
     }
 }
+CWRUA = {'sensor': 'DE',
+         'classes': {
+             "Normal": "dataset/cwru/0/normal.mat",
+             "Ball": "dataset/cwru/0/B*.mat",
+             "Inner race": "dataset/cwru/0/IR*.mat",
+             "Outer race": "dataset/cwru/0/OR*.mat"
+         }}
+
+CWRUB = {'sensor': 'DE',
+         'classes': {
+             "Normal": "dataset/cwru/3/normal*.mat",
+             "Ball": "dataset/cwru/3/B*.mat",
+             "Inner race": "dataset/cwru/3/IR*.mat",
+             "Outer race": "dataset/cwru/3/OR*.mat"
+         }}
+CLASSES = sorted(CWRUA['classes'].keys())
 
 
 def read_class_mat_file(cl_files_regx: str, sensor: str):
@@ -53,6 +124,7 @@ def split_into_samples(cl_data: np.array, length: int):
 
 
 def read_dataset(conf, input_length):
+    """Read dataset from disk and split it into samples"""
     X = []
     Y = []
     for i, (class_name, class_regex) in enumerate(conf['classes'].items()):
@@ -71,10 +143,42 @@ def read_dataset(conf, input_length):
     return X, Y
 
 
-INPUT_LENGTH = 500
+def render_accu_matrix(accu_matrix, datasets):
+    ax = sns.heatmap(accu_matrix, annot=True, fmt='.1f', xticklabels=datasets,
+                     yticklabels=datasets, cmap='coolwarm', vmin=50, vmax=100)
+    ax.set_title("Transfer results")
+    ax.set_ylabel("Source")
+    ax.set_xlabel("Target")
+    return ax
 
-for train_name, train_conf in DATASETS.items():
-    train_x, train_y = read_dataset(train_conf, INPUT_LENGTH)
-    for test_name, test_conf in DATASETS.items():
-        test_x, test_y = read_dataset(test_conf, INPUT_LENGTH)
-        print(f'Train on {train_name} and eval on {test_name}')
+
+def main():
+    """Main loop"""
+    from model import create_model, compile_model, train_model, INPUT_LENGTH
+    from sklearn.metrics import accuracy_score
+
+    n = len(DATASETS.keys())
+    accu_matrix = np.zeros((n, n))
+
+    for row, (train_name, train_conf) in enumerate(DATASETS.items()):
+        train_x, train_y = read_dataset(train_conf, INPUT_LENGTH)
+        model = create_model(INPUT_LENGTH)
+        model = compile_model(model)
+        model, _ = train_model(model, train_x, train_y)
+
+        for col, (test_name, test_conf) in enumerate(DATASETS.items()):
+            print(f'Train on {train_name} and eval on {test_name}')
+            test_x, test_y = read_dataset(test_conf, INPUT_LENGTH)
+            y_hat = model(test_x)
+            accu = accuracy_score(np.argmax(test_y, axis=1), np.argmax(y_hat, axis=1))
+            accu_matrix[row, col] = accu
+
+    # Display results
+    print(accu_matrix)
+    ax = render_accu_matrix(accu_matrix*100, DATASETS.keys())
+    ax.figure.savefig("out.svg")
+    ax.figure.savefig("out.png")
+
+
+if __name__ == '__main__':
+    main()
