@@ -1,0 +1,18 @@
+version: "3"
+services:
+  jupyter:
+    container_name: jupyter
+    image: tensorflow/tensorflow:2.7.0-gpu-jupyter
+    restart: unless-stopped
+    volumes:
+      - ./dataset:/tf/dataset
+      - ./src:/tf/src
+    ports:
+      - 127.0.0.1:8888:8888
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

@@ -146,7 +146,7 @@ def read_dataset(conf, input_length):
 def render_accu_matrix(accu_matrix, datasets):
     ax = sns.heatmap(accu_matrix, annot=True, fmt='.1f', xticklabels=datasets,
                      yticklabels=datasets, cmap='coolwarm', vmin=50, vmax=100)
-    ax.set_title("Transfer results")
+    ax.set_title("Fault Severity Diagnosis")
     ax.set_ylabel("Source")
     ax.set_xlabel("Target")
     ax.set_yticklabels(ax.get_yticklabels(), rotation=0)

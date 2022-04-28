@@ -1,19 +1,22 @@
 # %%
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import tensorflow as tf
-from sklearn.metrics import accuracy_score, precision_score, recall_score
-from sklearn.model_selection import train_test_split
-from tensorflow.keras import layers, losses, utils
-from tensorflow.keras.datasets import fashion_mnist
-from tensorflow.keras.models import Model
-import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
+!"$(pip install --upgrade pip)"
+!"$(pip install pandas scikit-learn numpy matplotlib seaborn)"
+%load_ext autoreload
+%autoreload 2
+# %%
+from src.eval import CWRUA, CWRUB, read_dataset
+from src.model import create_model, compile_model, train_model, INPUT_LENGTH
 from scipy.io import loadmat
-from model import create_model, compile_model, train_model, INPUT_LENGTH
-from eval import CWRUA, CWRUB, read_dataset
+from tensorflow.keras.models import Model
+from tensorflow.keras.datasets import fashion_mnist
+from tensorflow.keras import layers, losses, utils
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, precision_score, recall_score
+import tensorflow as tf
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
 
 # %%
 X_train, y_train = read_dataset(CWRUA, input_length=INPUT_LENGTH)
@@ -31,7 +34,7 @@ model, history = train_model(model, X_train, y_train, validation_data=(X_test, y
 plt.plot(history.history["loss"], label="Training Loss")
 plt.plot(history.history["val_loss"], label="Validation Loss")
 plt.legend()
-
+plt.show()
 # %%
 
 
