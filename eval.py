@@ -149,6 +149,8 @@ def render_accu_matrix(accu_matrix, datasets):
     ax.set_title("Transfer results")
     ax.set_ylabel("Source")
     ax.set_xlabel("Target")
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=90)
     return ax
 
 
