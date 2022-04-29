@@ -1,6 +1,7 @@
 # %%
 !"$(pip install --upgrade pip)"
 !"$(pip install pandas scikit-learn numpy matplotlib seaborn)"
+# %%
 %load_ext autoreload
 %autoreload 2
 # %%

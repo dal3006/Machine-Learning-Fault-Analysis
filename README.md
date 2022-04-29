@@ -2,6 +2,11 @@
 
 ## FRAN
 
+- 2 conv layer (kernel=2, filter=[32,64])
+- 2 max pool
+- 1000 FC (WHAT)
+- 3 FC (not 4?)
+
 ### Dataset
 
 #### Bearing fault diagnosis

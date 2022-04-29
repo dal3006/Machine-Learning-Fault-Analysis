@@ -1,3 +1,4 @@
+# %%
 import glob
 from pdb import post_mortem
 from scipy.io import loadmat
@@ -156,7 +157,7 @@ def render_accu_matrix(accu_matrix, datasets):
 
 def main():
     """Main loop"""
-    from model import create_model, compile_model, train_model, INPUT_LENGTH
+    from src.model import create_model, compile_model, train_model, INPUT_LENGTH
     from sklearn.metrics import accuracy_score
 
     n = len(DATASETS.keys())
@@ -171,13 +172,13 @@ def main():
         for col, (test_name, test_conf) in enumerate(DATASETS.items()):
             print(f'Train on {train_name} and eval on {test_name}')
             test_x, test_y = read_dataset(test_conf, INPUT_LENGTH)
-            y_hat = model(test_x)
+            y_hat = model.predict(test_x)
             accu = accuracy_score(np.argmax(test_y, axis=1), np.argmax(y_hat, axis=1))
             accu_matrix[row, col] = accu
 
     # Display results
     print(accu_matrix)
-    ax = render_accu_matrix(accu_matrix*100, DATASETS.keys())
+    ax = render_accu_matrix(accu_matrix * 100, DATASETS.keys())
     ax.figure.savefig("out.svg")
     ax.figure.savefig("out.png")
 
