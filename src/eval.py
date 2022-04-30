@@ -85,18 +85,18 @@ DATASETS = {
 }
 CWRUA = {'sensor': 'DE',
          'classes': {
-             "Normal": "dataset/cwru/0/normal.mat",
-             "Ball": "dataset/cwru/0/B*.mat",
-             "Inner race": "dataset/cwru/0/IR*.mat",
-             "Outer race": "dataset/cwru/0/OR*.mat"
+             "Normal": "../dataset/cwru/0/normal.mat",
+             "Ball": "../dataset/cwru/0/B*.mat",
+             "Inner race": "../dataset/cwru/0/IR*.mat",
+             "Outer race": "../dataset/cwru/0/OR*.mat"
          }}
 
 CWRUB = {'sensor': 'DE',
          'classes': {
-             "Normal": "dataset/cwru/3/normal*.mat",
-             "Ball": "dataset/cwru/3/B*.mat",
-             "Inner race": "dataset/cwru/3/IR*.mat",
-             "Outer race": "dataset/cwru/3/OR*.mat"
+             "Normal": "../dataset/cwru/3/normal*.mat",
+             "Ball": "../dataset/cwru/3/B*.mat",
+             "Inner race": "../dataset/cwru/3/IR*.mat",
+             "Outer race": "../dataset/cwru/3/OR*.mat"
          }}
 CLASSES = sorted(CWRUA['classes'].keys())
 
