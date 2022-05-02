@@ -140,7 +140,7 @@ def read_dataset(conf, input_length):
         Y += [i] * len(cl_samples)
 
     X = np.array(X)
-    Y = np.array(utils.to_categorical(Y))
+    Y = np.array(Y)  # utils.to_categorical(Y))
     return X, Y
 
 
