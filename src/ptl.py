@@ -8,27 +8,30 @@ from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, random_split
 import pytorch_lightning as pl
-# %%
 from eval import CWRUA, CWRUB, read_dataset
-from model import INPUT_LENGTH
 from torch.utils.data import TensorDataset, DataLoader
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import torchmetrics
 
+INPUT_LENGTH = 128
+BATCH_SZ = 256
 
-def torch_prepare_dataloader(x, y):
+# %%
+
+
+def torch_prepare_dataloader(x, y, batch_sz):
     x = torch.Tensor(x).unsqueeze(1)
     y = torch.Tensor(y).type(torch.LongTensor)
     dataset = TensorDataset(x, y)
-    return DataLoader(dataset, batch_size=64, num_workers=8)
+    return DataLoader(dataset, batch_size=batch_sz, num_workers=8)
 
 
 x, y = read_dataset(CWRUA, input_length=INPUT_LENGTH)
-train_loader = torch_prepare_dataloader(x, y)
+train_loader = torch_prepare_dataloader(x, y, batch_sz=BATCH_SZ)
 x, y = read_dataset(CWRUB, input_length=INPUT_LENGTH)
-test_loader = torch_prepare_dataloader(x, y)
+test_loader = torch_prepare_dataloader(x, y, batch_sz=BATCH_SZ)
 
 x, y = next(iter(train_loader))
 print(x.shape)
@@ -38,8 +41,9 @@ print(y.shape)
 
 
 class LitAutoEncoder(pl.LightningModule):
-    def __init__(self):
+    def __init__(self, learning_rate):
         super().__init__()
+        self.save_hyperparameters()
         self.encoder = nn.Sequential(
             nn.Conv1d(in_channels=1, out_channels=32, kernel_size=2),
             nn.ReLU(),
@@ -89,28 +93,27 @@ class LitAutoEncoder(pl.LightningModule):
         plt.figure(figsize=(10, 7))
         fig_ = sns.heatmap(cm.numpy(), annot=True, fmt='.1f', cmap='coolwarm').get_figure()
         plt.close(fig_)
-
-        self.logger.experiment.add_figure("Confusion matrix", fig_, self.current_epoch)
+        self.logger.experiment.add_figure("cm_val", fig_, self.current_epoch)
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
         return optimizer
 
 
-autoencoder = LitAutoEncoder()
-x, y = next(iter(train_loader))
-preds = autoencoder(x)
-preds.shape, y.shape
-# %%
+autoencoder = LitAutoEncoder(learning_rate=1e-03)
+# x, y = next(iter(train_loader))
+# preds = autoencoder(x)
+# preds.shape, y.shape
 
 from pytorch_lightning.callbacks import ModelSummary, EarlyStopping
 
+
 callbacks = [
     ModelSummary(max_depth=2),
-    EarlyStopping(monitor="val_loss", min_delta=0.00, patience=5, verbose=True, mode="min")
+    EarlyStopping(monitor="val_loss", min_delta=0.00, patience=15, mode="min")
 
 ]
-trainer = pl.Trainer(log_every_n_steps=10, callbacks=callbacks)
+trainer = pl.Trainer(callbacks=callbacks)
 trainer.fit(autoencoder, train_loader, test_loader)
 
 # %%
