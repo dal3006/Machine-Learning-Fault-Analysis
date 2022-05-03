@@ -1,6 +1,7 @@
 # %%
 %load_ext autoreload
 %autoreload 2
+from doctest import testfile
 from gc import callbacks
 import os
 import torch
@@ -9,7 +10,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader, random_split
 import pytorch_lightning as pl
 from eval import CWRUA, CWRUB, read_dataset
-from torch.utils.data import TensorDataset, DataLoader
+from torch.utils.data import TensorDataset, DataLoader, Dataset
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
@@ -21,20 +22,33 @@ BATCH_SZ = 256
 # %%
 
 
-def torch_prepare_dataloader(x, y, batch_sz):
+def torch_prepare_dataloader(x_src, x_trg, y, batch_sz):
     x = torch.Tensor(x).unsqueeze(1)
     y = torch.Tensor(y).type(torch.LongTensor)
     dataset = TensorDataset(x, y)
     return DataLoader(dataset, batch_size=batch_sz, num_workers=8)
 
 
-x, y = read_dataset(CWRUA, input_length=INPUT_LENGTH)
-train_loader = torch_prepare_dataloader(x, y, batch_sz=BATCH_SZ)
-x, y = read_dataset(CWRUB, input_length=INPUT_LENGTH)
-test_loader = torch_prepare_dataloader(x, y, batch_sz=BATCH_SZ)
+x_src, y_src = read_dataset(CWRUA, input_length=INPUT_LENGTH)
+x_trg, y_trg = read_dataset(CWRUB, input_length=INPUT_LENGTH, cap_length=x_src.shape[0])
 
-x, y = next(iter(train_loader))
-print(x.shape)
+x_src = torch.Tensor(x_src).unsqueeze(1)
+x_trg = torch.Tensor(x_trg).unsqueeze(1)
+y_src = torch.Tensor(y_src).type(torch.LongTensor)
+y_trg = torch.Tensor(y_trg).type(torch.LongTensor)
+dataset = TensorDataset(x_src, x_trg, y_src)
+train_loader = DataLoader(dataset, batch_size=BATCH_SZ, num_workers=8)
+dataset = TensorDataset(x_trg, y_trg)
+test_loader = DataLoader(dataset, batch_size=BATCH_SZ, num_workers=8)
+
+print("Train dataloader")
+x1, x2, y = next(iter(train_loader))
+print(x1.shape)
+print(x2.shape)
+print(y.shape)
+print("Test dataloader")
+x1, y = next(iter(test_loader))
+print(x1.shape)
 print(y.shape)
 
 # %%
@@ -72,9 +86,14 @@ class LitAutoEncoder(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         # training_step defines the train loop. It is independent of forward
-        x, y = batch
-        y_hat = self.forward(x)
-        loss = F.cross_entropy(y_hat, y)
+        x_src, x_trg, y_src = batch
+        # Extract features
+        x_src = self.encoder(x_src)
+        x_trg = self.encoder(x_trg)
+        # Classify
+        x_src = x_src.view(x_src.size(0), -1)  # flatten all dimensions except batch
+        y_hat = self.classifier(x_src)
+        loss = F.cross_entropy(y_hat, y_src)
         self.log("train_loss", loss)
         return loss
 
