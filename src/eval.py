@@ -1,11 +1,10 @@
 # %%
 import glob
-from pdb import post_mortem
 from scipy.io import loadmat
 import numpy as np
-from tensorflow.keras import utils
+# from tensorflow.keras import utils
 import seaborn as sns
-import matplotlib.pyplot as plt
+import random
 
 BASE_PATH = "dataset/cwru"
 
@@ -138,6 +137,10 @@ def read_dataset(conf, input_length):
             cl_samples += list(split_into_samples(cl_data, input_length))
         X += cl_samples
         Y += [i] * len(cl_samples)
+
+    c = list(zip(X, Y))
+    random.shuffle(c)
+    X, Y = zip(*c)
 
     X = np.array(X)
     Y = np.array(Y)  # utils.to_categorical(Y))
