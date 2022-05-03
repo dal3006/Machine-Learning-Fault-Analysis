@@ -12,6 +12,10 @@ import pytorch_lightning as pl
 from eval import CWRUA, CWRUB, read_dataset
 from model import INPUT_LENGTH
 from torch.utils.data import TensorDataset, DataLoader
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+import torchmetrics
 
 
 def torch_prepare_dataloader(x, y):
@@ -65,17 +69,28 @@ class LitAutoEncoder(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         # training_step defines the train loop. It is independent of forward
         x, y = batch
-        x = self.forward(x)
-        loss = F.cross_entropy(x, y)
+        y_hat = self.forward(x)
+        loss = F.cross_entropy(y_hat, y)
         self.log("train_loss", loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        x = self.forward(x)
-        loss = F.cross_entropy(x, y)
+        y_hat = self.forward(x)
+        loss = F.cross_entropy(y_hat, y)
         self.log("val_loss", loss, on_epoch=True, prog_bar=True)
-        return loss
+        return {'loss': loss, 'preds': torch.argmax(y_hat, axis=1), 'target': y}
+
+    def validation_epoch_end(self, outputs):
+        preds = torch.cat([tmp['preds'] for tmp in outputs])
+        targets = torch.cat([tmp['target'] for tmp in outputs])
+        cm = torchmetrics.ConfusionMatrix(num_classes=4, normalize="true")(preds, targets)
+        # df_cm = pd.DataFrame(confusion_matrix.numpy(), index=range(4), columns=range(4))
+        plt.figure(figsize=(10, 7))
+        fig_ = sns.heatmap(cm.numpy(), annot=True, fmt='.1f', cmap='coolwarm').get_figure()
+        plt.close(fig_)
+
+        self.logger.experiment.add_figure("Confusion matrix", fig_, self.current_epoch)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
