@@ -83,18 +83,18 @@ DATASETS = {
 }
 CWRUA = {'sensor': 'DE',
          'classes': {
-             "Normal": "../dataset/cwru/0/normal.mat",
-             "Ball": "../dataset/cwru/0/B*.mat",
-             "Inner race": "../dataset/cwru/0/IR*.mat",
-             "Outer race": "../dataset/cwru/0/OR*.mat"
+             "Normal": "dataset/cwru/0/normal.mat",
+             "Ball": "dataset/cwru/0/B*.mat",
+             "Inner race": "dataset/cwru/0/IR*.mat",
+             "Outer race": "dataset/cwru/0/OR*.mat"
          }}
 
 CWRUB = {'sensor': 'DE',
          'classes': {
-             "Normal": "../dataset/cwru/3/normal*.mat",
-             "Ball": "../dataset/cwru/3/B*.mat",
-             "Inner race": "../dataset/cwru/3/IR*.mat",
-             "Outer race": "../dataset/cwru/3/OR*.mat"
+             "Normal": "dataset/cwru/3/normal*.mat",
+             "Ball": "dataset/cwru/3/B*.mat",
+             "Inner race": "dataset/cwru/3/IR*.mat",
+             "Outer race": "dataset/cwru/3/OR*.mat"
          }}
 CLASSES = sorted(CWRUA['classes'].keys())
 
@@ -122,7 +122,7 @@ def split_into_samples(cl_data: np.array, length: int):
     return np.array(X).reshape((-1, length))
 
 
-def read_dataset(conf, input_length):
+def read_dataset(conf, input_length, cap_length=None):
     """Read dataset from disk and split it into samples"""
     X = []
     Y = []
@@ -141,8 +141,8 @@ def read_dataset(conf, input_length):
     random.shuffle(c)
     X, Y = zip(*c)
 
-    X = np.array(X)
-    Y = np.array(Y)  # utils.to_categorical(Y))
+    X = np.array(X)[0:cap_length]
+    Y = np.array(Y)[0:cap_length]  # utils.to_categorical(Y))
     return X, Y
 
 
@@ -159,7 +159,7 @@ def render_accu_matrix(accu_matrix, datasets):
 
 def main():
     """Main loop"""
-    from src.model import create_model, compile_model, train_model, INPUT_LENGTH
+    from model import create_model, compile_model, train_model, INPUT_LENGTH
     from sklearn.metrics import accuracy_score
 
     n = len(DATASETS.keys())
