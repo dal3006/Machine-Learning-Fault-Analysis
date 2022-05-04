@@ -32,7 +32,7 @@ import pandas as pd
 import seaborn as sns
 import torchmetrics
 
-INPUT_LENGTH = 128
+INPUT_LENGTH = 512
 BATCH_SZ = 64
 
 # %%
@@ -54,6 +54,17 @@ print("Test dataloader")
 x1, y = next(iter(test_loader))
 print(x1.shape)
 print(y.shape)
+
+# %%
+
+[x1, x2, y1] = next(iter(train_loader))
+for x_s, x_t, y_s in zip(x1, x2, y1):
+    if (y_s) == 3:
+        plt.figure(figsize=(8, 1))
+        plt.plot(x_s.squeeze(0))
+        plt.show()
+        # print(y_s)
+
 
 # %%
 
@@ -172,9 +183,6 @@ class LitAutoEncoder(pl.LightningModule):
 
 
 autoencoder = LitAutoEncoder(learning_rate=1e-03)
-# x, y = next(iter(train_loader))
-# preds = autoencoder(x)
-# preds.shape, y.shape
 
 from pytorch_lightning.callbacks import ModelSummary, EarlyStopping
 
