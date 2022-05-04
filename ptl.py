@@ -1,21 +1,6 @@
 # %%
-
-def isnotebook():
-    try:
-        shell = get_ipython().__class__.__name__
-        if shell == 'ZMQInteractiveShell':
-            return True   # Jupyter notebook or qtconsole
-        elif shell == 'TerminalInteractiveShell':
-            return False  # Terminal running IPython
-        else:
-            return False  # Other type (?)
-    except NameError:
-        return False      # Probably standard Python interpreter
-
-
-if isnotebook():
-    %load_ext autoreload
-    %autoreload 2
+# %load_ext autoreload
+# %autoreload 2
 
 from doctest import testfile
 from gc import callbacks
@@ -106,28 +91,51 @@ class MMD_loss(nn.Module):
 
 
 class LitAutoEncoder(pl.LightningModule):
-    def __init__(self, learning_rate):
+    def __init__(self, learning_rate, enable_mmd=True):
         super().__init__()
         self.save_hyperparameters()
         self.metrics = torch.nn.ModuleDict({'cm': torchmetrics.ConfusionMatrix(num_classes=4, normalize="true")})
         self.encoder = nn.Sequential(
             nn.Conv1d(in_channels=1, out_channels=32, kernel_size=2),
             nn.ReLU(),
-            nn.MaxPool1d(kernel_size=2),
             nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2),
+
+            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
+            nn.ReLU(),
+            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2),
+
+            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
+            nn.ReLU(),
+            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2),
+
+            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
+            nn.ReLU(),
+            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2),
+
+            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
+            nn.ReLU(),
             nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2),
 
         )
         self.classifier = nn.Sequential(
-            nn.Linear(480, 32),
+            nn.Linear(448, 32),
             nn.ReLU(),
             nn.Linear(32, 4),
             nn.Softmax(dim=1),
         )
+
+        if self.hparams.enable_mmd:
+            self.mmd = MMD_loss()
 
     def forward(self, x):
         """in lightning, forward defines the prediction/inference actions"""
@@ -142,9 +150,14 @@ class LitAutoEncoder(pl.LightningModule):
         # Extract features
         x_src = self.encoder(x_src)
         x_src = x_src.view(x_src.size(0), -1)  # flatten all dimensions except batch
-        x_trg = self.encoder(x_trg)
-        x_trg = x_trg.view(x_trg.size(0), -1)  # flatten all dimensions except batch
-        mmd_loss = MMD_loss()(x_src, x_trg)
+
+        if self.hparams.enable_mmd:
+            x_trg = self.encoder(x_trg)
+            x_trg = x_trg.view(x_trg.size(0), -1)
+            mmd_loss = self.mmd(x_src, x_trg)
+        else:
+            mmd_loss = 0.0
+
         # Classify
         y_hat = self.classifier(x_src)
         classif_loss = F.cross_entropy(y_hat, y_src)
@@ -182,7 +195,7 @@ class LitAutoEncoder(pl.LightningModule):
         return optimizer
 
 
-autoencoder = LitAutoEncoder(learning_rate=1e-03)
+autoencoder = LitAutoEncoder(learning_rate=1e-03, enable_mmd=False)
 
 from pytorch_lightning.callbacks import ModelSummary, EarlyStopping
 
@@ -192,7 +205,11 @@ callbacks = [
     EarlyStopping(monitor="val_loss_class", min_delta=0.00, patience=15, mode="min")
 
 ]
-trainer = pl.Trainer(callbacks=callbacks, accelerator="gpu", devices=1)
+
+if torch.cuda.device_count() > 0:
+    trainer = pl.Trainer(callbacks=callbacks, accelerator="gpu", devices=1)
+else:
+    trainer = pl.Trainer(callbacks=callbacks)
 trainer.fit(autoencoder, train_loader, test_loader)
 
 # %%
