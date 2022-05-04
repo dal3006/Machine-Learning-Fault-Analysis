@@ -17,13 +17,28 @@ import pandas as pd
 import seaborn as sns
 import torchmetrics
 
-INPUT_LENGTH = 512
+INPUT_LENGTH = 256
 BATCH_SZ = 64
+TRAIN_OVERLAP = 0.8
+TEST_OVERLAP = 0.8
+TEST_SIZE = 0.1
+ENABLE_MMD = True
+LEARNING_RATE = 1e-03
 
 # %%
-x_src, y_src, _, _ = read_dataset(CWRUA, input_length=INPUT_LENGTH, test_size=0)
-x_trg_train, y_trg_train, x_trg_test, y_trg_test = read_dataset(CWRUB, input_length=INPUT_LENGTH, test_size=0.1)
+x_src, y_src, _, _ = read_dataset(CWRUA,
+                                  test_size=0,
+                                  input_length=INPUT_LENGTH,
+                                  train_overlap=TRAIN_OVERLAP,
+                                  test_overlap=TEST_OVERLAP)
+x_trg_train, y_trg_train, x_trg_test, y_trg_test = read_dataset(CWRUB,
+                                                                test_size=TEST_SIZE,
+                                                                input_length=INPUT_LENGTH,
+                                                                train_overlap=TRAIN_OVERLAP,
+                                                                test_overlap=TEST_OVERLAP)
 x_trg_train = x_trg_train[0:x_src.size(0)]
+
+# y_src = y_src * 0  # TODO remove
 
 dataset = TensorDataset(x_src, x_trg_train, y_src)
 train_loader = DataLoader(dataset, shuffle=True, batch_size=BATCH_SZ, num_workers=8)
@@ -91,58 +106,73 @@ class MMD_loss(nn.Module):
 
 
 class LitAutoEncoder(pl.LightningModule):
-    def __init__(self, learning_rate, enable_mmd=True):
+    def __init__(self, learning_rate, enable_mmd=True,
+                 # Fake params, for hparams logging
+                 input_length=INPUT_LENGTH,
+                 batch_sz=BATCH_SZ,
+                 train_overlap=TRAIN_OVERLAP,
+                 test_overlap=TEST_OVERLAP,
+                 test_size=TEST_SIZE,):
         super().__init__()
         self.save_hyperparameters()
         self.metrics = torch.nn.ModuleDict({'cm': torchmetrics.ConfusionMatrix(num_classes=4, normalize="true")})
         self.encoder = nn.Sequential(
-            nn.Conv1d(in_channels=1, out_channels=32, kernel_size=2),
+            nn.Conv1d(in_channels=1, out_channels=16, kernel_size=3),
             nn.ReLU(),
-            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
-            nn.ReLU(),
+            # nn.Conv1d(in_channels=16, out_channels=16, kernel_size=3),
+            # nn.ReLU(),
             nn.MaxPool1d(kernel_size=2),
 
-            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
+            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=3),
             nn.ReLU(),
-            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
-            nn.ReLU(),
+            # nn.Conv1d(in_channels=16, out_channels=16, kernel_size=3),
+            # nn.ReLU(),
             nn.MaxPool1d(kernel_size=2),
 
-            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
-            nn.ReLU(),
-            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
-            nn.ReLU(),
-            nn.MaxPool1d(kernel_size=2),
+            # nn.Conv1d(in_channels=16, out_channels=16, kernel_size=2),
+            # nn.ReLU(),
+            # nn.Conv1d(in_channels=16, out_channels=16, kernel_size=2),
+            # nn.ReLU(),
+            # nn.MaxPool1d(kernel_size=2),
 
-            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
-            nn.ReLU(),
-            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
-            nn.ReLU(),
-            nn.MaxPool1d(kernel_size=2),
+            # nn.Conv1d(in_channels=16, out_channels=16, kernel_size=2),
+            # nn.ReLU(),
+            # nn.Conv1d(in_channels=16, out_channels=16, kernel_size=2),
+            # nn.ReLU(),
+            # nn.MaxPool1d(kernel_size=2),
 
-            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
-            nn.ReLU(),
-            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
-            nn.ReLU(),
-            nn.MaxPool1d(kernel_size=2),
+            # nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
+            # nn.ReLU(),
+            # nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
+            # nn.ReLU(),
+            # nn.MaxPool1d(kernel_size=2),
 
-        )
-        self.classifier = nn.Sequential(
-            nn.Linear(448, 32),
-            nn.ReLU(),
-            nn.Linear(32, 4),
-            nn.Softmax(dim=1),
+            # nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
+            # nn.ReLU(),
+            # nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
+            # nn.ReLU(),
+            # nn.MaxPool1d(kernel_size=2),
+
         )
 
         if self.hparams.enable_mmd:
             self.mmd = MMD_loss()
 
+        self.classifier = nn.Sequential(
+            nn.Linear(992, 16),
+            nn.ReLU(),
+            nn.Linear(16, 4),
+        )
+        self.softmax = nn.Softmax(dim=1)
+        self.crossentropy_loss = nn.CrossEntropyLoss()
+
     def forward(self, x):
         """in lightning, forward defines the prediction/inference actions"""
         x = self.encoder(x)
-        x = x.view(x.size(0), -1)  # flatten all dimensions except batch
+        x = x.view(x.size(0), -1)
         x = self.classifier(x)
-        return x
+        y_hat = self.softmax(x)
+        return y_hat
 
     def training_step(self, batch, batch_idx):
         # training_step defines the train loop. It is independent of forward
@@ -157,29 +187,34 @@ class LitAutoEncoder(pl.LightningModule):
             mmd_loss = self.mmd(x_src, x_trg)
         else:
             mmd_loss = 0.0
-
         # Classify
-        y_hat = self.classifier(x_src)
-        classif_loss = F.cross_entropy(y_hat, y_src)
+        x_src = self.classifier(x_src)
+        classif_loss = self.crossentropy_loss(x_src, y_src)
+        # classif_loss = F.cross_entropy(y_hat, y_src)
+
         total_loss = classif_loss + mmd_loss
         self.log("train_loss_class", classif_loss)
         self.log("train_loss_mmd", mmd_loss)
         self.log("train_loss_total", total_loss)
+        self.log("hp_metric", total_loss)
         return total_loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        y_hat = self.forward(x)
-        loss = F.cross_entropy(y_hat, y)
+        x = self.encoder(x)
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
+        loss = self.crossentropy_loss(x, y)
+        y_hat = self.softmax(x)
         self.log("val_loss_class", loss, on_epoch=True, prog_bar=True)
         return {'loss': loss, 'preds': torch.argmax(y_hat, axis=1), 'target': y}
 
-    def test_step(self, batch, batch_idx):
-        x, y = batch
-        y_hat = self.forward(x)
-        loss = F.cross_entropy(y_hat, y)
-        self.log("val_loss_class", loss, on_epoch=True, prog_bar=True)
-        return {'loss': loss, 'preds': torch.argmax(y_hat, axis=1), 'target': y}
+    # def test_step(self, batch, batch_idx):
+    #     x, y = batch
+    #     y_hat = self.forward(x)
+    #     loss = F.cross_entropy(y_hat, y)
+    #     self.log("val_loss_class", loss, on_epoch=True, prog_bar=True)
+    #     return {'loss': loss, 'preds': torch.argmax(y_hat, axis=1), 'target': y}
 
     def validation_epoch_end(self, outputs):
         preds = torch.cat([tmp['preds'] for tmp in outputs])
@@ -195,7 +230,7 @@ class LitAutoEncoder(pl.LightningModule):
         return optimizer
 
 
-autoencoder = LitAutoEncoder(learning_rate=1e-03, enable_mmd=False)
+autoencoder = LitAutoEncoder(learning_rate=LEARNING_RATE, enable_mmd=ENABLE_MMD)
 
 from pytorch_lightning.callbacks import ModelSummary, EarlyStopping
 

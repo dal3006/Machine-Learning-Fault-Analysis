@@ -124,7 +124,16 @@ def split_into_samples(cl_data: np.array, length: int):
     return np.array(X).reshape((-1, length))
 
 
-def read_dataset(conf, input_length, train_overlap=0.5, test_overlap=0.8, test_size=0.2):
+def normalize(x):
+    assert x.size(0) > 1
+    assert x.size(1) == 1
+    mean = x.mean(axis=2, keepdims=True)
+    std = x.std(axis=2, keepdims=True)
+    x = (x - mean) / (std + 1e-12)
+    return x
+
+
+def read_dataset(conf, input_length, train_overlap, test_overlap, test_size):
     """Read dataset from disk and split it into samples"""
     X_train = []
     Y_train = []
@@ -156,10 +165,10 @@ def read_dataset(conf, input_length, train_overlap=0.5, test_overlap=0.8, test_s
             X_train.append(sig_train)
             Y_train.append(torch.Tensor([i] * sig_train.size(0)))
 
-    X_train = torch.cat(X_train).unsqueeze(1)
+    X_train = normalize(torch.cat(X_train).unsqueeze(1))
     Y_train = torch.cat(Y_train).type(torch.LongTensor)
     if test_size != 0:
-        X_test = torch.cat(X_test).unsqueeze(1)
+        X_test = normalize(torch.cat(X_test).unsqueeze(1))
         Y_test = torch.cat(Y_test).type(torch.LongTensor)
     return X_train, Y_train, X_test, Y_test
 
