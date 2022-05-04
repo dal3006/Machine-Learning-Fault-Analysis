@@ -4,6 +4,8 @@ from scipy.io import loadmat
 import numpy as np
 import seaborn as sns
 import random
+from sklearn.model_selection import train_test_split
+import torch
 
 BASE_PATH = "dataset/cwru"
 
@@ -122,28 +124,44 @@ def split_into_samples(cl_data: np.array, length: int):
     return np.array(X).reshape((-1, length))
 
 
-def read_dataset(conf, input_length, cap_length=None):
+def read_dataset(conf, input_length, train_overlap=0.5, test_overlap=0.8, test_size=0.2):
     """Read dataset from disk and split it into samples"""
-    X = []
-    Y = []
+    X_train = []
+    Y_train = []
+    X_test = []
+    Y_test = []
     for i, (class_name, class_regex) in enumerate(conf['classes'].items()):
         print(f'[{i}] Loading class {class_name}')
         # One class can be split into multiple .mat files, so load them all
-        cl_samples = []
         for cl_path in glob.glob(class_regex):
-            print(f'{cl_path}')
-            cl_data = read_class_mat_file(cl_path, conf['sensor'])
-            cl_samples += list(split_into_samples(cl_data, input_length))
-        X += cl_samples
-        Y += [i] * len(cl_samples)
+            # Load signal from file
+            sig = read_class_mat_file(cl_path, conf['sensor'])
+            sig = torch.Tensor(sig)
 
-    c = list(zip(X, Y))
-    random.shuffle(c)
-    X, Y = zip(*c)
+            if test_size != 0:
+                # Handle test set
+                sig_train, sig_test = train_test_split(sig, test_size=test_size, random_state=42)
+                # Divide continous signal into rolling window samples
+                step = int((1 - test_overlap) * input_length)
+                sig_test = sig_test.unfold(dimension=0, size=input_length, step=step)
+                X_test.append(sig_test)
+                Y_test.append(torch.Tensor([i] * sig_test.size(0)))
+            else:
+                sig_train = sig
 
-    X = np.array(X)[0:cap_length]
-    Y = np.array(Y)[0:cap_length]  # utils.to_categorical(Y))
-    return X, Y
+            # Handle train set
+            step = int((1 - train_overlap) * input_length)
+            sig_train = sig_train.unfold(dimension=0, size=input_length, step=step)
+            # Append to dataset with labels
+            X_train.append(sig_train)
+            Y_train.append(torch.Tensor([i] * sig_train.size(0)))
+
+    X_train = torch.cat(X_train).unsqueeze(1)
+    Y_train = torch.cat(Y_train).type(torch.LongTensor)
+    if test_size != 0:
+        X_test = torch.cat(X_test).unsqueeze(1)
+        Y_test = torch.cat(Y_test).type(torch.LongTensor)
+    return X_train, Y_train, X_test, Y_test
 
 
 def render_accu_matrix(accu_matrix, datasets):

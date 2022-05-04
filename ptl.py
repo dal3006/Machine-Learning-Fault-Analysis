@@ -33,28 +33,16 @@ import seaborn as sns
 import torchmetrics
 
 INPUT_LENGTH = 128
-BATCH_SZ = 256
+BATCH_SZ = 64
 
 # %%
+x_src, y_src, _, _ = read_dataset(CWRUA, input_length=INPUT_LENGTH, test_size=0)
+x_trg_train, y_trg_train, x_trg_test, y_trg_test = read_dataset(CWRUB, input_length=INPUT_LENGTH, test_size=0.1)
+x_trg_train = x_trg_train[0:x_src.size(0)]
 
-
-def torch_prepare_dataloader(x_src, x_trg, y, batch_sz):
-    x = torch.Tensor(x).unsqueeze(1)
-    y = torch.Tensor(y).type(torch.LongTensor)
-    dataset = TensorDataset(x, y)
-    return DataLoader(dataset, batch_size=batch_sz, num_workers=8)
-
-
-x_src, y_src = read_dataset(CWRUA, input_length=INPUT_LENGTH)
-x_trg, y_trg = read_dataset(CWRUB, input_length=INPUT_LENGTH, cap_length=x_src.shape[0])
-
-x_src = torch.Tensor(x_src).unsqueeze(1)
-x_trg = torch.Tensor(x_trg).unsqueeze(1)
-y_src = torch.Tensor(y_src).type(torch.LongTensor)
-y_trg = torch.Tensor(y_trg).type(torch.LongTensor)
-dataset = TensorDataset(x_src, x_trg, y_src)
-train_loader = DataLoader(dataset, batch_size=BATCH_SZ, num_workers=8)
-dataset = TensorDataset(x_trg, y_trg)
+dataset = TensorDataset(x_src, x_trg_train, y_src)
+train_loader = DataLoader(dataset, shuffle=True, batch_size=BATCH_SZ, num_workers=8)
+dataset = TensorDataset(x_trg_test, y_trg_test)
 test_loader = DataLoader(dataset, batch_size=BATCH_SZ, num_workers=8)
 
 print("Train dataloader")
@@ -156,6 +144,13 @@ class LitAutoEncoder(pl.LightningModule):
         return total_loss
 
     def validation_step(self, batch, batch_idx):
+        x, y = batch
+        y_hat = self.forward(x)
+        loss = F.cross_entropy(y_hat, y)
+        self.log("val_loss_class", loss, on_epoch=True, prog_bar=True)
+        return {'loss': loss, 'preds': torch.argmax(y_hat, axis=1), 'target': y}
+
+    def test_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self.forward(x)
         loss = F.cross_entropy(y_hat, y)
