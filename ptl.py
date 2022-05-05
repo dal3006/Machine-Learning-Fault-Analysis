@@ -23,8 +23,8 @@ TRAIN_OVERLAP = 0.8
 TEST_OVERLAP = 0.8
 TEST_SIZE = 0.1
 ENABLE_MMD = True
+ALPHA = 1e-4
 LEARNING_RATE = 1e-03
-
 # %%
 x_src, y_src, _, _ = read_dataset(CWRUA,
                                   test_size=0,
@@ -38,7 +38,20 @@ x_trg_train, y_trg_train, x_trg_test, y_trg_test = read_dataset(CWRUB,
                                                                 test_overlap=TEST_OVERLAP)
 x_trg_train = x_trg_train[0:x_src.size(0)]
 
-# y_src = y_src * 0  # TODO remove
+# %%
+
+classes, counts = y_src.unique(return_counts=True)
+ds_size = y_src.size(0)
+percents = counts / ds_size * 100
+class_weights = ds_size / (len(classes) * counts)
+# class_weights = torch.Tensor([0, 1, 0, 0])  # TODO:zzzz
+print("CLASS\tCOUNT\tPERC\tWEIGHT")
+for cl, cnt, perc, wght in zip(classes, counts, percents, class_weights):
+    print(f'{cl}\t{cnt}\t{perc:.1f}%\t{wght:.3f}')
+
+
+# %%
+
 
 dataset = TensorDataset(x_src, x_trg_train, y_src)
 train_loader = DataLoader(dataset, shuffle=True, batch_size=BATCH_SZ, num_workers=8)
@@ -106,7 +119,7 @@ class MMD_loss(nn.Module):
 
 
 class LitAutoEncoder(pl.LightningModule):
-    def __init__(self, learning_rate, enable_mmd=True,
+    def __init__(self, learning_rate, enable_mmd, alpha, class_weights=None,
                  # Fake params, for hparams logging
                  input_length=INPUT_LENGTH,
                  batch_sz=BATCH_SZ,
@@ -115,31 +128,32 @@ class LitAutoEncoder(pl.LightningModule):
                  test_size=TEST_SIZE,):
         super().__init__()
         self.save_hyperparameters()
+        self.example_input_array = torch.rand(batch_sz, 1, input_length)
         self.metrics = torch.nn.ModuleDict({'cm': torchmetrics.ConfusionMatrix(num_classes=4, normalize="true")})
         self.encoder = nn.Sequential(
             nn.Conv1d(in_channels=1, out_channels=16, kernel_size=3),
             nn.ReLU(),
-            # nn.Conv1d(in_channels=16, out_channels=16, kernel_size=3),
-            # nn.ReLU(),
+            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=3),
+            nn.ReLU(),
             nn.MaxPool1d(kernel_size=2),
 
             nn.Conv1d(in_channels=16, out_channels=16, kernel_size=3),
             nn.ReLU(),
-            # nn.Conv1d(in_channels=16, out_channels=16, kernel_size=3),
-            # nn.ReLU(),
+            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=3),
+            nn.ReLU(),
             nn.MaxPool1d(kernel_size=2),
 
-            # nn.Conv1d(in_channels=16, out_channels=16, kernel_size=2),
-            # nn.ReLU(),
-            # nn.Conv1d(in_channels=16, out_channels=16, kernel_size=2),
-            # nn.ReLU(),
-            # nn.MaxPool1d(kernel_size=2),
+            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=2),
+            nn.ReLU(),
+            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=2),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2),
 
-            # nn.Conv1d(in_channels=16, out_channels=16, kernel_size=2),
-            # nn.ReLU(),
-            # nn.Conv1d(in_channels=16, out_channels=16, kernel_size=2),
-            # nn.ReLU(),
-            # nn.MaxPool1d(kernel_size=2),
+            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=2),
+            nn.ReLU(),
+            nn.Conv1d(in_channels=16, out_channels=16, kernel_size=2),
+            nn.ReLU(),
+            nn.MaxPool1d(kernel_size=2),
 
             # nn.Conv1d(in_channels=32, out_channels=32, kernel_size=2),
             # nn.ReLU(),
@@ -159,12 +173,12 @@ class LitAutoEncoder(pl.LightningModule):
             self.mmd = MMD_loss()
 
         self.classifier = nn.Sequential(
-            nn.Linear(992, 16),
+            nn.Linear(208, 16),
             nn.ReLU(),
             nn.Linear(16, 4),
         )
         self.softmax = nn.Softmax(dim=1)
-        self.crossentropy_loss = nn.CrossEntropyLoss()
+        self.crossentropy_loss = nn.CrossEntropyLoss(weight=self.hparams.class_weights)
 
     def forward(self, x):
         """in lightning, forward defines the prediction/inference actions"""
@@ -184,18 +198,19 @@ class LitAutoEncoder(pl.LightningModule):
         if self.hparams.enable_mmd:
             x_trg = self.encoder(x_trg)
             x_trg = x_trg.view(x_trg.size(0), -1)
-            mmd_loss = self.mmd(x_src, x_trg)
+            mmd_loss = self.mmd(x_src, x_trg) * self.hparams.alpha
         else:
             mmd_loss = 0.0
+
         # Classify
         x_src = self.classifier(x_src)
         classif_loss = self.crossentropy_loss(x_src, y_src)
         # classif_loss = F.cross_entropy(y_hat, y_src)
 
         total_loss = classif_loss + mmd_loss
-        self.log("train_loss_class", classif_loss)
-        self.log("train_loss_mmd", mmd_loss)
-        self.log("train_loss_total", total_loss)
+        self.log("classificaiton_loss/train", classif_loss)
+        self.log("mmd_loss/train", mmd_loss)
+        self.log("total_loss/train", total_loss)
         self.log("hp_metric", total_loss)
         return total_loss
 
@@ -206,7 +221,7 @@ class LitAutoEncoder(pl.LightningModule):
         x = self.classifier(x)
         loss = self.crossentropy_loss(x, y)
         y_hat = self.softmax(x)
-        self.log("val_loss_class", loss, on_epoch=True, prog_bar=True)
+        self.log("classificaiton_loss/val", loss, on_epoch=True, prog_bar=True)
         return {'loss': loss, 'preds': torch.argmax(y_hat, axis=1), 'target': y}
 
     # def test_step(self, batch, batch_idx):
@@ -223,28 +238,35 @@ class LitAutoEncoder(pl.LightningModule):
         plt.figure(figsize=(10, 7))
         fig_ = sns.heatmap(cm.cpu(), annot=True, fmt='.1f', cmap='coolwarm').get_figure()
         plt.close(fig_)
-        self.logger.experiment.add_figure("cm_val", fig_, self.current_epoch)
+        self.logger.experiment.add_figure("cm/val", fig_, self.current_epoch)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
         return optimizer
 
 
-autoencoder = LitAutoEncoder(learning_rate=LEARNING_RATE, enable_mmd=ENABLE_MMD)
+autoencoder = LitAutoEncoder(
+    class_weights=class_weights,
+    learning_rate=LEARNING_RATE,
+    enable_mmd=ENABLE_MMD,
+    alpha=ALPHA
+)
 
 from pytorch_lightning.callbacks import ModelSummary, EarlyStopping
+from pytorch_lightning.loggers import TensorBoardLogger
 
+
+logger = TensorBoardLogger(save_dir=".", log_graph=True)
 
 callbacks = [
-    ModelSummary(max_depth=2),
-    EarlyStopping(monitor="val_loss_class", min_delta=0.00, patience=15, mode="min")
-
+    # ModelSummary(max_depth=2),
+    EarlyStopping(monitor="total_loss/train", min_delta=0.00, patience=15, mode="min")
 ]
 
 if torch.cuda.device_count() > 0:
-    trainer = pl.Trainer(callbacks=callbacks, accelerator="gpu", devices=1)
+    trainer = pl.Trainer(callbacks=callbacks, logger=logger, accelerator="gpu", devices=1)
 else:
-    trainer = pl.Trainer(callbacks=callbacks)
+    trainer = pl.Trainer(callbacks=callbacks, logger=None)
 trainer.fit(autoencoder, train_loader, test_loader)
 
 # %%
