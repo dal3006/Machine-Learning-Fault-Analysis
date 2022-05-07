@@ -1,5 +1,5 @@
 .python-version
 **__pycache__
-**lightning_logs
+**lightning_logs*
 **.ipynb_checkpoints
 .vscode/settings.json
