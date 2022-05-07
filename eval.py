@@ -6,6 +6,7 @@ import seaborn as sns
 import random
 from sklearn.model_selection import train_test_split
 import torch
+import matplotlib.pyplot as plt
 
 BASE_PATH = "dataset/cwru"
 
@@ -101,19 +102,18 @@ CWRUB = {'sensor': 'DE',
 CLASSES = sorted(CWRUA['classes'].keys())
 
 
-def read_class_mat_file(cl_files_regx: str, sensor: str):
+def read_class_mat_file(cl_path: str, sensor: str):
     """Read classname.mat and extract data collected by specified sensor"""
-    sensor_data = []
-    for cl_path in glob.glob(cl_files_regx):
-        cl_data = loadmat(cl_path)
-        # Available sensors are DE, FE, BA. Note that in some measurements
-        # not all sensors are available
-        keys = [k for k in cl_data.keys() if sensor in k]
-        if len(keys) > 0:
-            sensor_data += list(cl_data[keys[0]].flatten())
-        else:
-            print(f'Warning: sensor {sensor} is missing in {cl_path}')
-    return sensor_data
+    cl_data = loadmat(cl_path)
+    # Available sensors are DE, FE, BA. Note that in some measurements
+    # not all sensors are available
+    keys = [k for k in cl_data.keys() if sensor in k]
+    if len(keys) > 0:
+        sig = cl_data[keys[0]].flatten()
+    else:
+        print(f'Warning: sensor {sensor} is missing in {cl_path}')
+        sig = np.array()
+    return sig
 
 
 def split_into_samples(cl_data: np.array, length: int):
@@ -147,29 +147,35 @@ def read_dataset(conf, input_length, train_overlap, test_overlap, test_size):
             sig = read_class_mat_file(cl_path, conf['sensor'])
             sig = torch.Tensor(sig)
 
-            if test_size != 0:
-                # Handle test set
-                sig_train, sig_test = train_test_split(sig, test_size=test_size, random_state=42)
-                # Divide continous signal into rolling window samples
-                step = int((1 - test_overlap) * input_length)
-                sig_test = sig_test.unfold(dimension=0, size=input_length, step=step)
-                X_test.append(sig_test)
-                Y_test.append(torch.Tensor([i] * sig_test.size(0)))
-            else:
-                sig_train = sig
+            # plt.figure(figsize=(16, 2))
+            # plt.plot(sig[0:input_length])
+            # plt.title(cl_path)
+            # plt.show()
 
-            # Handle train set
+            # Split into train/test
+            split_idx = int(sig.size(0) * (1 - test_size))
+            # Train
+            sig_train = sig[:split_idx]
             step = int((1 - train_overlap) * input_length)
             sig_train = sig_train.unfold(dimension=0, size=input_length, step=step)
-            # Append to dataset with labels
             X_train.append(sig_train)
             Y_train.append(torch.Tensor([i] * sig_train.size(0)))
+            # Test
+            sig_test = sig[split_idx:]
+            step = int((1 - test_overlap) * input_length)
+            sig_test = sig_test.unfold(dimension=0, size=input_length, step=step)
+            X_test.append(sig_test)
+            Y_test.append(torch.Tensor([i] * sig_test.size(0)))
+
+            # plt.figure(figsize=(16, 2))
+            # plt.plot(X_train[-1][0])
+            # plt.title(cl_path)
+            # plt.show()
 
     X_train = normalize(torch.cat(X_train).unsqueeze(1))
     Y_train = torch.cat(Y_train).type(torch.LongTensor)
-    if test_size != 0:
-        X_test = normalize(torch.cat(X_test).unsqueeze(1))
-        Y_test = torch.cat(Y_test).type(torch.LongTensor)
+    X_test = normalize(torch.cat(X_test).unsqueeze(1))
+    Y_test = torch.cat(Y_test).type(torch.LongTensor)
     return X_train, Y_train, X_test, Y_test
 
 
