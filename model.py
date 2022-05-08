@@ -89,7 +89,7 @@ class MyModel(pl.LightningModule):
     def add_argparse_args(parent_parser):
         parser = parent_parser.add_argument_group("MyModel")
         parser.add_argument("--learning_rate", type=float, default=1e-03)
-        parser.add_argument("--enable_mmd", type=bool, default=False)
+        parser.add_argument("--enable_mmd", action="store_true")
         parser.add_argument("--alpha", type=float, default=1e-06)
         return parent_parser
 
