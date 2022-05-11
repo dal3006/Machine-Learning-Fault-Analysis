@@ -27,7 +27,7 @@ data_module.prepare_data()
 logger = TensorBoardLogger(save_dir=".", log_graph=True)
 callbacks = [
     ModelSummary(max_depth=2),
-    EarlyStopping(monitor="total_loss/train", min_delta=0.01, patience=15, mode="min")
+    EarlyStopping(monitor="total_loss/train", min_delta=0.0, patience=15, mode="min")
 ]
 trainer = pl.Trainer.from_argparse_args(args, callbacks=callbacks, logger=logger)
 
