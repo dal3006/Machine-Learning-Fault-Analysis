@@ -127,7 +127,7 @@ class MyDataModule(LightningDataModule):
         parser.add_argument("--target", type=str, default="CWRUB")
         parser.add_argument("--test_size", type=float, default=0.1)
         parser.add_argument("--input_length", type=int, default=256)
-        parser.add_argument("--batch_size", type=int, default=256)
+        parser.add_argument("--batch_size", type=int, default=512)
         return parent_parser
 
     def prepare_data(self):

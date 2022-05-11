@@ -7,40 +7,54 @@ import seaborn as sns
 import torchmetrics
 
 
-class MMD_loss(nn.Module):
-    def __init__(self, kernel_mul=2.0, kernel_num=5):
-        super(MMD_loss, self).__init__()
+class MMD(nn.Module):
+    def __init__(self, kernel_type='rbf', kernel_mul=2.0, kernel_num=5):
+        super(MMD, self).__init__()
         self.kernel_num = kernel_num
         self.kernel_mul = kernel_mul
         self.fix_sigma = None
-        return
+        self.kernel_type = kernel_type
 
     def guassian_kernel(self, source, target, kernel_mul=2.0, kernel_num=5, fix_sigma=None):
         n_samples = int(source.size()[0]) + int(target.size()[0])
         total = torch.cat([source, target], dim=0)
-
-        total0 = total.unsqueeze(0).expand(int(total.size(0)), int(total.size(0)), int(total.size(1)))
-        total1 = total.unsqueeze(1).expand(int(total.size(0)), int(total.size(0)), int(total.size(1)))
-        L2_distance = ((total0 - total1)**2).sum(2)
+        total0 = total.unsqueeze(0).expand(
+            int(total.size(0)), int(total.size(0)), int(total.size(1)))
+        total1 = total.unsqueeze(1).expand(
+            int(total.size(0)), int(total.size(0)), int(total.size(1)))
+        L2_distance = ((total0 - total1) ** 2).sum(2)
         if fix_sigma:
             bandwidth = fix_sigma
         else:
-            bandwidth = torch.sum(L2_distance.data) / (n_samples**2 - n_samples)
+            bandwidth = torch.sum(L2_distance.data) / (n_samples ** 2 - n_samples)
         bandwidth /= kernel_mul ** (kernel_num // 2)
-        bandwidth_list = [bandwidth * (kernel_mul**i) for i in range(kernel_num)]
-        kernel_val = [torch.exp(-L2_distance / bandwidth_temp) for bandwidth_temp in bandwidth_list]
+        bandwidth_list = [bandwidth * (kernel_mul ** i)
+                          for i in range(kernel_num)]
+        kernel_val = [torch.exp(-L2_distance / bandwidth_temp)
+                      for bandwidth_temp in bandwidth_list]
         return sum(kernel_val)
 
-    def forward(self, source, target):
-        batch_size = int(source.size()[0])
-        kernels = self.guassian_kernel(source, target, kernel_mul=self.kernel_mul,
-                                       kernel_num=self.kernel_num, fix_sigma=self.fix_sigma)
-        XX = kernels[:batch_size, :batch_size]
-        YY = kernels[batch_size:, batch_size:]
-        XY = kernels[:batch_size, batch_size:]
-        YX = kernels[batch_size:, :batch_size]
-        loss = torch.mean(XX + YY - XY - YX)
+    def linear_mmd2(self, f_of_X, f_of_Y):
+        loss = 0.0
+        delta = f_of_X.float().mean(0) - f_of_Y.float().mean(0)
+        loss = delta.dot(delta.T)
         return loss
+
+    def forward(self, source, target):
+        if self.kernel_type == 'linear':
+            return self.linear_mmd2(source, target)
+        elif self.kernel_type == 'rbf':
+            batch_size = int(source.size()[0])
+            kernels = self.guassian_kernel(
+                source, target, kernel_mul=self.kernel_mul, kernel_num=self.kernel_num, fix_sigma=self.fix_sigma)
+            with torch.no_grad():
+                XX = torch.mean(kernels[:batch_size, :batch_size])
+                YY = torch.mean(kernels[batch_size:, batch_size:])
+                XY = torch.mean(kernels[:batch_size, batch_size:])
+                YX = torch.mean(kernels[batch_size:, :batch_size])
+                loss = torch.mean(XX + YY - XY - YX)
+            torch.cuda.empty_cache()
+            return loss
 
 
 class MyModel(pl.LightningModule):
@@ -58,24 +72,28 @@ class MyModel(pl.LightningModule):
         })
         self.encoder = nn.Sequential(
             nn.Conv1d(in_channels=1, out_channels=32, kernel_size=3),
+            nn.BatchNorm1d(32),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2),
 
             nn.Conv1d(in_channels=32, out_channels=32, kernel_size=3),
+            nn.BatchNorm1d(32),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2),
 
             nn.Conv1d(in_channels=32, out_channels=32, kernel_size=3),
+            nn.BatchNorm1d(32),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2),
 
             nn.Conv1d(in_channels=32, out_channels=32, kernel_size=3),
+            nn.BatchNorm1d(32),
             nn.ReLU(),
             nn.MaxPool1d(kernel_size=2),
         )
 
         if self.hparams.enable_mmd:
-            self.mmd = MMD_loss()
+            self.mmd = MMD(kernel_type=self.hparams.mmd_type)
 
         self.classifier = nn.Sequential(
             nn.Linear(448, 32),
@@ -89,8 +107,9 @@ class MyModel(pl.LightningModule):
     def add_argparse_args(parent_parser):
         parser = parent_parser.add_argument_group("MyModel")
         parser.add_argument("--learning_rate", type=float, default=1e-03)
-        parser.add_argument("--enable_mmd", action="store_true")
-        parser.add_argument("--alpha", type=float, default=1e-06)
+        parser.add_argument("--enable_mmd", type=bool, default=True)
+        parser.add_argument("--mmd_type", type=str, default="linear")
+        parser.add_argument("--alpha", type=float, default=500)
         return parent_parser
 
     def forward(self, x):
@@ -142,7 +161,7 @@ class MyModel(pl.LightningModule):
             targets = torch.cat([tmp['target'] for tmp in outputs])
             cm = self.metrics.cm(preds, targets)
             plt.figure(figsize=(10, 7))
-            fig_ = sns.heatmap(cm.cpu(), annot=True, fmt='.1f', cmap='coolwarm').get_figure()
+            fig_ = sns.heatmap(cm.cpu(), annot=True, fmt='.2f', cmap='coolwarm').get_figure()
             plt.close(fig_)
             self.logger.experiment.add_figure("cm/val/dataloader_idx_" +
                                               str(outputs[0]["dataloader_idx"]), fig_, self.current_epoch)
