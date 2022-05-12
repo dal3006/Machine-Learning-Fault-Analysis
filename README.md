@@ -1,5 +1,10 @@
 # Machine-Learning-Fault-Analysis
 
+# todo:
+
+- balance classes
+- plot accu/recall/precision
+
 ## FRAN
 
 - 2 conv layer (kernel=2, filter=[32,64])

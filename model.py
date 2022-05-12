@@ -66,7 +66,6 @@ class MyModel(pl.LightningModule):
                  ):
         super().__init__()
         self.save_hyperparameters()
-        # self.example_input_array = torch.rand(batch_sz, 1, input_length) #TODO
         self.metrics = torch.nn.ModuleDict({
             'cm': torchmetrics.ConfusionMatrix(num_classes=4, normalize="true"),
             'accuracy': torchmetrics.Accuracy()
@@ -103,12 +102,13 @@ class MyModel(pl.LightningModule):
         )
         self.softmax = nn.Softmax(dim=1)
         self.crossentropy_loss = nn.CrossEntropyLoss(weight=self.hparams.class_weights)
+        self.example_input_array = torch.rand(self.hparams.batch_size, 1, self.hparams.input_length)
 
     @staticmethod
     def add_argparse_args(parent_parser):
         parser = parent_parser.add_argument_group("MyModel")
         parser.add_argument("--learning_rate", type=float, default=1e-03)
-        parser.add_argument("--enable_mmd", type=bool, default=True)
+        parser.add_argument("--enable_mmd", default=True, type=lambda x: (str(x).lower() in ['true', '1', 'yes']))
         parser.add_argument("--mmd_type", type=str, default="linear")
         parser.add_argument("--alpha", type=float, default=500)
         return parent_parser
@@ -153,9 +153,13 @@ class MyModel(pl.LightningModule):
 
         x = self.classifier(embeddings)
         loss = self.crossentropy_loss(x, y)
-        y_hat = self.softmax(x)
+        y_hat = self.softmax(x)  # onehot-encoded probabilities
+        preds = torch.argmax(y_hat, axis=1)  # numeric preds
+        # Compute and log metrics
+        accu = self.metrics.accuracy(preds, y)
         self.log("classificaiton_loss/val", loss, on_epoch=True, prog_bar=True)
-        return {'loss': loss, 'preds': torch.argmax(y_hat, axis=1), 'target': y, 'embeddings': embeddings, 'dataloader_idx': dataloader_idx}
+        self.log("accuracy/val", accu, on_epoch=True, prog_bar=True)
+        return {'loss': loss, 'preds': preds, 'target': y, 'embeddings': embeddings, 'dataloader_idx': dataloader_idx}
 
     def validation_epoch_end(self, dataloaders_outputs):
         for outputs in dataloaders_outputs:
