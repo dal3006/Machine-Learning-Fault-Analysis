@@ -59,11 +59,7 @@ class MMD(nn.Module):
 
 
 class MyModel(pl.LightningModule):
-    def __init__(self,
-                 # *args,
-                 **kwargs
-                 # class_weights=None, # TODO: pass from LightningDataModule
-                 ):
+    def __init__(self, **kwargs):
         super().__init__()
         self.save_hyperparameters()
         self.metrics = torch.nn.ModuleDict({
@@ -108,7 +104,7 @@ class MyModel(pl.LightningModule):
     def add_argparse_args(parent_parser):
         parser = parent_parser.add_argument_group("MyModel")
         parser.add_argument("--learning_rate", type=float, default=1e-03)
-        parser.add_argument("--enable_mmd", default=True, type=lambda x: (str(x).lower() in ['true', '1', 'yes']))
+        parser.add_argument("--enable_mmd", default="true", type=lambda x: (str(x).lower() in ['true', '1', 'yes']))
         parser.add_argument("--mmd_type", type=str, default="linear")
         parser.add_argument("--alpha", type=float, default=500)
         return parent_parser
