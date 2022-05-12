@@ -5,9 +5,9 @@ from pytorch_lightning.callbacks import ModelSummary, EarlyStopping
 from pytorch_lightning.loggers import TensorBoardLogger
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 import pytorch_lightning as pl
-# import tensorflow as tf
-# import tensorboard as tb
-# tf.io.gfile = tb.compat.tensorflow_stub.io.gfile
+import tensorflow as tf
+import tensorboard as tb
+tf.io.gfile = tb.compat.tensorflow_stub.io.gfile
 
 # PARSE ARGS
 parser = ArgumentParser()
@@ -26,6 +26,7 @@ args = parser.parse_args()
 # LOAD DATA
 data_module = MyDataModule.from_argparse_args(args)
 data_module.prepare_data()
+exit(0)
 
 
 class CheckpointTracker(Callback):

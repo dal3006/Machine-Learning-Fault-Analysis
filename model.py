@@ -159,17 +159,19 @@ class MyModel(pl.LightningModule):
 
     def validation_epoch_end(self, dataloaders_outputs):
         for outputs in dataloaders_outputs:
-            # Confusion matrix
+            dataloader_name = "dataloader_idx_" + str(outputs[0]["dataloader_idx"])
             preds = torch.cat([tmp['preds'] for tmp in outputs])
             targets = torch.cat([tmp['target'] for tmp in outputs])
+            embeddings = torch.cat([tmp['embeddings'] for tmp in outputs])
+            # Confusion matrix
             cm = self.metrics.cm(preds, targets)
             plt.figure(figsize=(10, 7))
             fig_ = sns.heatmap(cm.cpu(), annot=True, fmt='.2f', cmap='coolwarm').get_figure()
             plt.close(fig_)
-            self.logger.experiment.add_figure("cm/val/dataloader_idx_" +
-                                              str(outputs[0]["dataloader_idx"]), fig_, self.current_epoch)
+            self.logger.experiment.add_figure("cm/val/" + dataloader_name, fig_, self.current_epoch)
             # Plotter
-            # self.logger.experiment.add_embedding(outputs["embeddings"], tag="embedding", metadata=y)
+            self.logger.experiment.add_embedding(embeddings, tag="embdd/val/" +
+                                                 dataloader_name, metadata=[int(t) for t in targets])
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
