@@ -5,6 +5,14 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "data",
+            "type": "python",
+            "request": "launch",
+            "program": "data.py",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "trainer_main",
             "type": "python",
             "request": "launch",

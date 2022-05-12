@@ -2,7 +2,7 @@
 import numpy as np
 from data import read_dataset, DATASETS
 import torch
-
+# %%
 a = np.load("FRAN/CWRU_dataset/CWRU_DE.npy", allow_pickle=True)
 
 
@@ -26,3 +26,10 @@ for cl in classes:
     choices = np.random.choice(y_src_train[y_src_train == cl], min_count)
 
 # %%
+
+
+x = torch.randint(1, 10, (4, 2))
+print(x)
+# %%
+indices = torch.randperm(len(x))[:4]
+x[indices]

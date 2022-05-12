@@ -276,8 +276,8 @@ def read_dataset(root_dir, conf, input_length, train_overlap, test_overlap, test
     # Reshape
     x_train = torch.cat(x_train)
     x_test = torch.cat(x_test)
-    y_train = torch.Tensor(y_train).reshape(-1)
-    y_test = torch.Tensor(y_test).reshape(-1)  # .type(torch.LongTensor)
+    y_train = torch.Tensor(y_train).reshape(-1).type(torch.LongTensor)
+    y_test = torch.Tensor(y_test).reshape(-1).type(torch.LongTensor)
     # Normalize
     x_train = std_normalization(x_train)
     x_test = std_normalization(x_test)
