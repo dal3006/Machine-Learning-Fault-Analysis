@@ -25,8 +25,6 @@ args = parser.parse_args()
 
 # LOAD DATA
 data_module = MyDataModule.from_argparse_args(args)
-data_module.prepare_data()
-exit(0)
 
 
 class CheckpointTracker(Callback):
@@ -50,7 +48,7 @@ callbacks = [
 trainer = pl.Trainer.from_argparse_args(args, callbacks=callbacks, logger=logger)
 
 # TRAIN
-my_model = MyModel(class_weights=data_module.class_weights, **vars(args))
+my_model = MyModel(**vars(args))
 trainer.fit(my_model, data_module)
 
 print("last_checkpoint_accu=" + str(float(tracker.collection[-1]['accuracy/val/dataloader_idx_1'])))

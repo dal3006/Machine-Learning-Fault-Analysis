@@ -1,5 +1,6 @@
 
 
+from typing import List
 from pytorch_lightning.core import LightningDataModule
 import torch
 from torch.utils.data import DataLoader
@@ -9,6 +10,7 @@ from scipy.io import loadmat
 import numpy as np
 import os
 
+# Note that 'classes' order matter
 DATASETS = {
     'DE007': {
         'sensor': 'DE',
@@ -117,7 +119,6 @@ class MyDataModule(LightningDataModule):
         self.test_size = test_size
         self.input_length = input_length
         self.batch_size = batch_size
-        self.class_weights = None
 
     @staticmethod
     def add_argparse_args(parent_parser):
@@ -161,13 +162,11 @@ class MyDataModule(LightningDataModule):
         classes, counts = y_src_train.unique(return_counts=True)
         ds_size = y_src_train.size(0)
         percents = counts / ds_size * 100
-        class_weights = ds_size / (len(classes) * counts)
         print("CLASS\tCOUNT\tPERC\tWEIGHT")
-        for cl, cnt, perc, wght in zip(classes, counts, percents, class_weights):
-            print(f'{cl}\t{cnt}\t{perc:.1f}%\t{wght:.3f}')
+        for cl, cnt, perc in zip(classes, counts, percents):
+            print(f'{int(cl)}\t{cnt}\t{perc:.1f}%')
 
         # Train
-        self.class_weights = class_weights
         self.x_src_train = x_src_train
         self.x_trg_train = x_trg_train
         self.y_src_train = y_src_train
@@ -176,11 +175,6 @@ class MyDataModule(LightningDataModule):
         self.y_src_test = y_src_test
         self.x_trg_test = x_trg_test
         self.y_trg_test = y_trg_test
-
-    def setup(self, stage):
-        # make assignments here (val/train/test split)
-        # called on every process in DDP
-        pass
 
     def train_dataloader(self):
         dataset = TensorDataset(self.x_src_train, self.x_trg_train, self.y_src_train)
@@ -216,14 +210,14 @@ class AddGaussianNoise(object):
 
 def read_dataset(root_dir, conf, input_length, train_overlap, test_overlap, test_size):
     """Read dataset from disk and split it into samples"""
-    X_train = []
-    Y_train = []
-    X_test = []
-    Y_test = []
+    x_train = []
+    x_test = []
     for i, (class_name, class_regex) in enumerate(conf['classes'].items()):
         print(f'[{i}] Loading class {class_name}')
-        # One class can be split into multiple .mat files, so load them all
 
+        # One class can be split into multiple .mat files, so load them all
+        class_sampl_train = []
+        class_sampl_test = []
         for cl_path in glob.glob(os.path.join(root_dir, class_regex)):
             # Load signal from file
             sig = read_class_mat_file(cl_path, conf['sensor'])
@@ -239,29 +233,58 @@ def read_dataset(root_dir, conf, input_length, train_overlap, test_overlap, test
             # Train
             sig_train = sig[:split_idx]
             step = int((1 - train_overlap) * input_length)
-            sig_train = sig_train.unfold(dimension=0, size=input_length, step=step)
-            X_train.append(sig_train)
-            Y_train.append(torch.Tensor([i] * sig_train.size(0)))
+            sig_train_samples = sig_train.unfold(dimension=0, size=input_length, step=step)
+            class_sampl_train.append(sig_train_samples)
             # Test
             sig_test = sig[split_idx:]
             step = int((1 - test_overlap) * input_length)
-            sig_test = sig_test.unfold(dimension=0, size=input_length, step=step)
-            X_test.append(sig_test)
-            Y_test.append(torch.Tensor([i] * sig_test.size(0)))
+            sig_test_samples = sig_test.unfold(dimension=0, size=input_length, step=step)
+            class_sampl_test.append(sig_test_samples)
 
             # plt.figure(figsize=(16, 2))
             # plt.plot(X_train[-1][0])
             # plt.title(cl_path)
             # plt.show()
 
-    X_train = normalize(torch.cat(X_train).unsqueeze(1))
-    Y_train = torch.cat(Y_train).type(torch.LongTensor)
-    X_test = normalize(torch.cat(X_test).unsqueeze(1))
-    Y_test = torch.cat(Y_test).type(torch.LongTensor)
-    return X_train, Y_train, X_test, Y_test
+        # merge class samples from different files
+        x_train.append(torch.cat(class_sampl_train))
+        x_test.append(torch.cat(class_sampl_test))
+
+    # Rebalance
+    x_train = rebalance_by_removal(x_train)
+    x_test = rebalance_by_removal(x_test)
+    # Create labels
+    y_train = [[i] * len(x) for i, x in enumerate(x_train)]
+    y_test = [[i] * len(x) for i, x in enumerate(x_test)]
+    # Reshape
+    x_train = torch.cat(x_train).unsqueeze(1)
+    x_test = torch.cat(x_test).unsqueeze(1)
+    y_train = torch.Tensor(y_train).reshape(-1)
+    y_test = torch.Tensor(y_test).reshape(-1)  # .type(torch.LongTensor)
+    # Normalize
+    x_train = std_normalization(x_train)
+    x_test = std_normalization(x_test)
+
+    return x_train, y_train, x_test, y_test
 
 
-def normalize(x):
+def rebalance_by_removal(classes_samples: List):
+    """classes_samples is a list of torch tensors: [[class1],[class2],....]"""
+    # Rebalance classes
+    num_classes = len(classes_samples)
+    lengths = [len(cl) for cl in classes_samples]
+    min_length = min(lengths)
+    print("Lengths before are: " + str(lengths))
+    for i in range(num_classes):
+        # random choice without repetition
+        indices = torch.randperm(lengths[i])[:min_length]
+        classes_samples[i] = classes_samples[i][indices]
+    new_lengths = [len(cl) for cl in classes_samples]
+    print("Lengths after are:  " + str(new_lengths))
+    return classes_samples
+
+
+def std_normalization(x):
     assert x.size(0) > 1
     assert x.size(1) == 1
     mean = x.mean(axis=2, keepdims=True)

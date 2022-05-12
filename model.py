@@ -97,7 +97,7 @@ class MyModel(pl.LightningModule):
             nn.Linear(32, 4),
         )
         self.softmax = nn.Softmax(dim=1)
-        self.crossentropy_loss = nn.CrossEntropyLoss(weight=self.hparams.class_weights)
+        self.crossentropy_loss = nn.CrossEntropyLoss()
         self.example_input_array = torch.rand(self.hparams.batch_size, 1, self.hparams.input_length)
 
     @staticmethod
