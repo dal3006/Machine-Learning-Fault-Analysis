@@ -4,7 +4,9 @@ from data import MyDataModule
 from pytorch_lightning.callbacks import ModelSummary, EarlyStopping
 from pytorch_lightning.loggers import TensorBoardLogger
 import pytorch_lightning as pl
-
+import tensorflow as tf
+import tensorboard as tb
+tf.io.gfile = tb.compat.tensorflow_stub.io.gfile
 
 # PARSE ARGS
 parser = ArgumentParser()

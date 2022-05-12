@@ -1,3 +1,4 @@
+from importlib.metadata import metadata
 from typing import List
 import torch
 from torch import nn
@@ -148,15 +149,17 @@ class MyModel(pl.LightningModule):
     def validation_step(self, batch, batch_idx, dataloader_idx):
         x, y = batch
         x = self.encoder(x)
-        x = x.view(x.size(0), -1)
-        x = self.classifier(x)
+        embeddings = x.view(x.size(0), -1)
+
+        x = self.classifier(embeddings)
         loss = self.crossentropy_loss(x, y)
         y_hat = self.softmax(x)
         self.log("classificaiton_loss/val", loss, on_epoch=True, prog_bar=True)
-        return {'loss': loss, 'preds': torch.argmax(y_hat, axis=1), 'target': y, 'dataloader_idx': dataloader_idx}
+        return {'loss': loss, 'preds': torch.argmax(y_hat, axis=1), 'target': y, 'embeddings': embeddings, 'dataloader_idx': dataloader_idx}
 
     def validation_epoch_end(self, dataloaders_outputs):
         for outputs in dataloaders_outputs:
+            # Confusion matrix
             preds = torch.cat([tmp['preds'] for tmp in outputs])
             targets = torch.cat([tmp['target'] for tmp in outputs])
             cm = self.metrics.cm(preds, targets)
@@ -165,6 +168,8 @@ class MyModel(pl.LightningModule):
             plt.close(fig_)
             self.logger.experiment.add_figure("cm/val/dataloader_idx_" +
                                               str(outputs[0]["dataloader_idx"]), fig_, self.current_epoch)
+            # Plotter
+            # self.logger.experiment.add_embedding(outputs["embeddings"], tag="embedding", metadata=y)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
