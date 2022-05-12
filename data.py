@@ -1,5 +1,3 @@
-
-
 from typing import List
 from pytorch_lightning.core import LightningDataModule
 import torch
@@ -189,14 +187,6 @@ class MyDataModule(LightningDataModule):
 
         return [src_test_loader, trg_test_loader]
 
-    # def test_dataloader(self):
-    #     test_split = Dataset(...)
-    #     return DataLoader(test_split)
-
-    # def teardown(self):
-        # clean up after fit or test
-        # called on every process in DDP
-
 
 class AddGaussianNoise(object):
     def __init__(self, sigma):
@@ -206,6 +196,36 @@ class AddGaussianNoise(object):
     def __call__(self, sample):
         noise = torch.normal(0, 0.25, sample['data'].size())
         return {'data': sample['data'] + noise, 'label': sample['label']}
+
+
+def plot_batch(x_batch, label: str):
+    """
+    x_batch: (batch_sz, input_length)
+    label: 1d array
+    """
+    fig, axs = plt.subplots(len(x_batch))
+    plt.title(label)
+    for x, ax in zip(x_batch, axs):
+        ax.plot(x)
+    plt.show()
+
+
+def plot_batch_multilabel(x, y):
+    """
+    x_batch: (batch_sz, input_length)
+    label: (batch_sz, 1)
+    """
+    batch_sz = len(x)
+    _, counts = torch.unique(y, return_counts=True)
+    curr_row_idxs = [0 for x in range(len(counts))]
+    fig, axs = plt.subplots(int(max(counts)), len(counts))
+    for x, y in zip(x, y):
+        col_idx = int(y)
+        row_idx = curr_row_idxs[col_idx]
+        curr_row_idxs[col_idx] += 1
+        axs[row_idx, col_idx].plot(x)
+        axs[0, col_idx].set_title(col_idx)
+    plt.show()
 
 
 def read_dataset(root_dir, conf, input_length, train_overlap, test_overlap, test_size):
@@ -223,10 +243,7 @@ def read_dataset(root_dir, conf, input_length, train_overlap, test_overlap, test
             sig = read_class_mat_file(cl_path, conf['sensor'])
             sig = torch.Tensor(sig)
 
-            # plt.figure(figsize=(16, 2))
-            # plt.plot(sig[0:input_length])
-            # plt.title(cl_path)
-            # plt.show()
+            # plot_batch(sig[:-(len(sig) % 256)].view(-1, 256)[:32], cl_path)
 
             # Split into train/test
             split_idx = int(sig.size(0) * (1 - test_size))
@@ -242,7 +259,7 @@ def read_dataset(root_dir, conf, input_length, train_overlap, test_overlap, test
             class_sampl_test.append(sig_test_samples)
 
             # plt.figure(figsize=(16, 2))
-            # plt.plot(X_train[-1][0])
+            # plt.plot(class_sampl_test[-1][0])
             # plt.title(cl_path)
             # plt.show()
 
@@ -257,15 +274,15 @@ def read_dataset(root_dir, conf, input_length, train_overlap, test_overlap, test
     y_train = [[i] * len(x) for i, x in enumerate(x_train)]
     y_test = [[i] * len(x) for i, x in enumerate(x_test)]
     # Reshape
-    x_train = torch.cat(x_train).unsqueeze(1)
-    x_test = torch.cat(x_test).unsqueeze(1)
+    x_train = torch.cat(x_train)
+    x_test = torch.cat(x_test)
     y_train = torch.Tensor(y_train).reshape(-1)
     y_test = torch.Tensor(y_test).reshape(-1)  # .type(torch.LongTensor)
     # Normalize
     x_train = std_normalization(x_train)
     x_test = std_normalization(x_test)
 
-    return x_train, y_train, x_test, y_test
+    return x_train.unsqueeze(1), y_train, x_test.unsqueeze(1), y_test
 
 
 def rebalance_by_removal(classes_samples: List):
@@ -285,10 +302,9 @@ def rebalance_by_removal(classes_samples: List):
 
 
 def std_normalization(x):
-    assert x.size(0) > 1
-    assert x.size(1) == 1
-    mean = x.mean(axis=2, keepdims=True)
-    std = x.std(axis=2, keepdims=True)
+    assert len(x.shape) == 2
+    mean = x.mean(axis=1, keepdims=True)
+    std = x.std(axis=1, keepdims=True)
     x = (x - mean) / (std + 1e-12)
     return x
 
@@ -305,3 +321,21 @@ def read_class_mat_file(cl_path: str, sensor: str):
         print(f'Warning: sensor {sensor} is missing in {cl_path}')
         sig = np.array()
     return sig
+
+
+if __name__ == "__main__":
+    """Visualize some batches of data"""
+    from argparse import ArgumentParser
+    import matplotlib.pyplot as plt
+    # PARSE ARGS
+    parser = ArgumentParser()
+    parser = MyDataModule.add_argparse_args(parser)
+    args = parser.parse_args()
+    data_module = MyDataModule.from_argparse_args(args)
+
+    data_module.prepare_data()
+    dataloader = data_module.train_dataloader()
+    batch = next(iter(dataloader))
+
+    x_s, x_t, y_s = batch
+    plot_batch_multilabel(x_s.squeeze(1), y_s)
