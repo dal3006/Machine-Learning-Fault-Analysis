@@ -141,9 +141,9 @@ class MyDataModule(LightningDataModule):
         parser.add_argument("--data_dir", type=str, default="./dataset/")
         parser.add_argument("--source", type=str, default="CWRUA")
         parser.add_argument("--target", type=str, default="CWRUB")
-        parser.add_argument("--test_size", type=float, default=0.1)
+        parser.add_argument("--test_size", type=float, default=0.2)
         parser.add_argument("--input_length", type=int, default=256)
-        parser.add_argument("--batch_size", type=int, default=512)
+        parser.add_argument("--batch_size", type=int, default=128)
         return parent_parser
 
     def prepare_data(self):
@@ -235,6 +235,7 @@ def plot_batch_multilabel(x, y):
     batch_sz = len(x)
     _, counts = torch.unique(y, return_counts=True)
     curr_row_idxs = [0 for x in range(len(counts))]
+    plt.figure()
     fig, axs = plt.subplots(int(max(counts)), len(counts))
     for x, y in zip(x, y):
         col_idx = int(y)
@@ -256,6 +257,7 @@ def read_dataset(root_dir, conf, input_length, train_overlap, test_overlap, test
         class_sampl_train = []
         class_sampl_test = []
         for cl_path in glob.glob(os.path.join(root_dir, class_regex)):
+            print(cl_path)
             # Load signal from file
             sig = read_class_mat_file(cl_path, conf['sensor'])
             sig = torch.Tensor(sig)

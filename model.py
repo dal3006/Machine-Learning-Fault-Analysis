@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import torchmetrics
 
+# Choose which hparams to log in tensorboard
+LOG_HPARAMS=["learning_rate","num_classes","mmd_type","alpha","source","target","batch_size","input_length","test_size"]
 
 class MMD(nn.Module):
     def __init__(self, kernel_type='rbf', kernel_mul=2.0, kernel_num=5):
@@ -48,65 +50,69 @@ class MMD(nn.Module):
             batch_size = int(source.size()[0])
             kernels = self.guassian_kernel(
                 source, target, kernel_mul=self.kernel_mul, kernel_num=self.kernel_num, fix_sigma=self.fix_sigma)
-            with torch.no_grad():
-                XX = torch.mean(kernels[:batch_size, :batch_size])
-                YY = torch.mean(kernels[batch_size:, batch_size:])
-                XY = torch.mean(kernels[:batch_size, batch_size:])
-                YX = torch.mean(kernels[batch_size:, :batch_size])
-                loss = torch.mean(XX + YY - XY - YX)
-            torch.cuda.empty_cache()
+            XX = kernels[:batch_size, :batch_size]
+            YY = kernels[batch_size:, batch_size:]
+            XY = kernels[:batch_size, batch_size:]
+            YX = kernels[batch_size:, :batch_size]
+            loss = torch.mean(XX + YY - XY - YX)
             return loss
 
 
 class MyModel(pl.LightningModule):
-    def __init__(self, **kwargs):
+    def __init__(self, save_embeddings, **kwargs):
         super().__init__()
-        self.save_hyperparameters()
+        self.save_embeddings = save_embeddings
+        self.save_hyperparameters(*LOG_HPARAMS)
         self.metrics = torch.nn.ModuleDict({
-            'cm': torchmetrics.ConfusionMatrix(num_classes=4, normalize="true"),
+            'cm': torchmetrics.ConfusionMatrix(num_classes=self.hparams.num_classes, normalize="true"),
             'accuracy': torchmetrics.Accuracy()
         })
         self.encoder = nn.Sequential(
             nn.Conv1d(in_channels=1, out_channels=32, kernel_size=3),
-            nn.BatchNorm1d(32),
-            nn.ReLU(),
+            # nn.BatchNorm1d(32),
+            nn.GELU(),
             nn.MaxPool1d(kernel_size=2),
 
             nn.Conv1d(in_channels=32, out_channels=32, kernel_size=3),
-            nn.BatchNorm1d(32),
-            nn.ReLU(),
+            # nn.BatchNorm1d(32),
+            nn.GELU(),
             nn.MaxPool1d(kernel_size=2),
 
             nn.Conv1d(in_channels=32, out_channels=32, kernel_size=3),
-            nn.BatchNorm1d(32),
-            nn.ReLU(),
+            # nn.BatchNorm1d(32),
+            nn.GELU(),
             nn.MaxPool1d(kernel_size=2),
 
             nn.Conv1d(in_channels=32, out_channels=32, kernel_size=3),
-            nn.BatchNorm1d(32),
-            nn.ReLU(),
+            # nn.BatchNorm1d(32),
+            nn.GELU(),
             nn.MaxPool1d(kernel_size=2),
         )
 
-        if self.hparams.enable_mmd:
+        if self.hparams.alpha > 0:
             self.mmd = MMD(kernel_type=self.hparams.mmd_type)
 
         self.classifier = nn.Sequential(
             nn.Linear(448, 32),
-            nn.ReLU(),
-            nn.Linear(32, 4),
+            nn.GELU(),
+            nn.Linear(32, self.hparams.num_classes),
         )
         self.softmax = nn.Softmax(dim=1)
         self.crossentropy_loss = nn.CrossEntropyLoss()
+        # required to plot model computational graph on tensorboard
         self.example_input_array = torch.rand(self.hparams.batch_size, 1, self.hparams.input_length)
 
     @staticmethod
     def add_argparse_args(parent_parser):
         parser = parent_parser.add_argument_group("MyModel")
-        parser.add_argument("--learning_rate", type=float, default=1e-03)
-        parser.add_argument("--enable_mmd", default="true", type=lambda x: (str(x).lower() in ['true', '1', 'yes']))
-        parser.add_argument("--mmd_type", type=str, default="linear")
-        parser.add_argument("--alpha", type=float, default=500)
+        # HPARAMS
+        parser.add_argument("--learning_rate", type=float, default=0.001)
+        parser.add_argument("--mmd_type", type=str, default="rbf")
+        parser.add_argument("--alpha", type=float, default=0.01)
+        # OTHER HPARAMS
+        parser.add_argument("--num_classes", type=int, default=4)
+        parser.add_argument("--save_embeddings", default="false",
+                            type=lambda x: (str(x).lower() in ['true', '1', 'yes']))
         return parent_parser
 
     def forward(self, x):
@@ -122,11 +128,11 @@ class MyModel(pl.LightningModule):
         x_src, x_trg, y_src = batch
         # Extract features
         x_src = self.encoder(x_src)
-        x_src = x_src.view(x_src.size(0), -1)  # flatten all dimensions except batch
+        x_src = x_src.view(-1,x_src.shape[1]*x_src.shape[2])  # flatten all dimensions except batch
 
-        if self.hparams.enable_mmd:
+        if self.hparams.alpha > 0:
             x_trg = self.encoder(x_trg)
-            x_trg = x_trg.view(x_trg.size(0), -1)
+            x_trg = x_trg.view(-1,x_trg.shape[1]*x_trg.shape[2])
             mmd_loss = self.mmd(x_src, x_trg) * self.hparams.alpha
         else:
             mmd_loss = 0.0
@@ -153,8 +159,8 @@ class MyModel(pl.LightningModule):
         preds = torch.argmax(y_hat, axis=1)  # numeric preds
         # Compute and log metrics
         accu = self.metrics.accuracy(preds, y)
-        self.log("classificaiton_loss/val", loss, on_epoch=True, prog_bar=True)
-        self.log("accuracy/val", accu, on_epoch=True, prog_bar=True)
+        self.log("classificaiton_loss/val", loss, on_epoch=True)
+        self.log("accuracy/val", accu, on_epoch=True)
         return {'loss': loss, 'preds': preds, 'target': y, 'embeddings': embeddings, 'dataloader_idx': dataloader_idx}
 
     def validation_epoch_end(self, dataloaders_outputs):
