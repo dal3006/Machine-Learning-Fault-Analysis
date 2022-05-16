@@ -21,13 +21,13 @@ parser = pl.Trainer.add_argparse_args(parser)
 logparser = parser.add_argument_group("MyLogger")
 logparser.add_argument("--experiment_name", "-n", type=str, default="default")
 parser.add_argument('--autorestore', default="true", type=lambda x: (str(x).lower() in ['true', '1', 'yes']))
+parser.add_argument('--restore', type=str)
 args = parser.parse_args()
 
 # restore checkpoint
 
 # LOAD DATA
 data_module = MyDataModule.from_argparse_args(args)
-
 
 
 # class CheckpointTracker(Callback):
@@ -44,21 +44,20 @@ data_module = MyDataModule.from_argparse_args(args)
 logger = TensorBoardLogger(save_dir="./lightning_logs/", name=args.experiment_name, log_graph=True)
 callbacks = [
     ModelSummary(max_depth=2),
-    EarlyStopping(monitor="accuracy/val/dataloader_idx_1", min_delta=0.0, patience=40, mode="max"),
-    ModelCheckpoint(monitor="accuracy/val/dataloader_idx_1", mode="max", verbose=True), # save best target accuracy checkpoint
-    # tracker
+    EarlyStopping(monitor="accuracy/val/dataloader_idx_1", min_delta=0.0, patience=60, mode="max"),
+    ModelCheckpoint(monitor="accuracy/val/dataloader_idx_1", mode="max",
+                    verbose=True),  # save best target accuracy checkpoint
+    ModelCheckpoint(dirpath="./autorestore/", filename=".autorestore", save_last=True),
 ]
 
-autorestore_file=None
-if args.autorestore:
-    callbacks.append(
-        ModelCheckpoint(dirpath="./autorestore/", filename=".autorestore",save_last=True), # Save last epoch for auto restore on grid.ai spot instances
-    )
-    if os.path.exists("./autorestore/last.ckpt"):
-        print("autorestore param true and restore file found.")
-        autorestore_file="./autorestore/last.ckpt"
+autorestore_file = None
+if args.restore:
+    autorestore_file = args.restore
+elif args.autorestore and os.path.exists("./autorestore/last.ckpt"):
+    print("autorestore param true and restore file found.")
+    autorestore_file = "./autorestore/last.ckpt"
 
-trainer = pl.Trainer.from_argparse_args(args, callbacks=callbacks, logger=logger, max_epochs=200, max_time={"hours": 2})
+trainer = pl.Trainer.from_argparse_args(args, callbacks=callbacks, logger=logger, max_epochs=300, max_time={"hours": 2})
 
 # TRAIN
 my_model = MyModel(**vars(args))

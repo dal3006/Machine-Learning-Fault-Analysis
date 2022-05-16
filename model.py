@@ -8,7 +8,9 @@ import seaborn as sns
 import torchmetrics
 
 # Choose which hparams to log in tensorboard
-LOG_HPARAMS=["learning_rate","num_classes","mmd_type","alpha","source","target","batch_size","input_length","test_size"]
+LOG_HPARAMS = ["learning_rate", "num_classes", "mmd_type", "alpha",
+               "source", "target", "batch_size", "input_length", "test_size"]
+
 
 class MMD(nn.Module):
     def __init__(self, kernel_type='rbf', kernel_mul=2.0, kernel_num=5):
@@ -128,11 +130,11 @@ class MyModel(pl.LightningModule):
         x_src, x_trg, y_src = batch
         # Extract features
         x_src = self.encoder(x_src)
-        x_src = x_src.view(-1,x_src.shape[1]*x_src.shape[2])  # flatten all dimensions except batch
+        x_src = x_src.view(-1, x_src.shape[1] * x_src.shape[2])  # flatten all dimensions except batch
 
         if self.hparams.alpha > 0:
             x_trg = self.encoder(x_trg)
-            x_trg = x_trg.view(-1,x_trg.shape[1]*x_trg.shape[2])
+            x_trg = x_trg.view(-1, x_trg.shape[1] * x_trg.shape[2])
             mmd_loss = self.mmd(x_src, x_trg) * self.hparams.alpha
         else:
             mmd_loss = 0.0
