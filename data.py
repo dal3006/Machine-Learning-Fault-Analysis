@@ -279,8 +279,8 @@ def read_dataset(root_dir, conf, input_length, train_overlap, test_overlap, test
     y_train = torch.Tensor(y_train).reshape(-1).type(torch.LongTensor)
     y_test = torch.Tensor(y_test).reshape(-1).type(torch.LongTensor)
     # Normalize
-    x_train = std_normalization(x_train)
-    x_test = std_normalization(x_test)
+    x_train = minmax_normalization(x_train)
+    x_test = minmax_normalization(x_test)
 
     return x_train.unsqueeze(1), y_train, x_test.unsqueeze(1), y_test
 
@@ -306,6 +306,12 @@ def std_normalization(x):
     mean = x.mean(axis=1, keepdims=True)
     std = x.std(axis=1, keepdims=True)
     x = (x - mean) / (std + 1e-12)
+    return x
+
+def minmax_normalization(x):
+    min_v = x.min(axis=1, keepdims=True)[0]
+    range_v = x.max(axis=1, keepdims=True)[0] - min_v
+    x = (x - min_v) / range_v
     return x
 
 
