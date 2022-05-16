@@ -10,7 +10,11 @@
             "request": "launch",
             "program": "data.py",
             "console": "integratedTerminal",
-            "justMyCode": true
+            "justMyCode": true,
+            "args": [
+                "--batch_size",
+                "25"
+            ]
         },
         {
             "name": "trainer_main",
@@ -20,14 +24,28 @@
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": [
-                "--enable_mmd",
-                "False",
-                "--max_epochs",
+                // "--max_epochs",
+                // "1",
+                "--alpha",
                 "1",
                 "--source",
                 "CWRUA",
                 "--target",
-                "CWRUB"
+                "CWRUB",
+                "--num_classes",
+                "4",
+                "--batch_size",
+                "64",
+                "--save_embeddings",
+                "false",
+                "--experiment_name",
+                "debug",
+                "--learning_rate",
+                "1e-3",
+                "--detect_anomaly",
+                "True",
+                "--accelerator",
+                "gpu"
             ]
         }
     ]
