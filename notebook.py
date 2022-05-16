@@ -1,51 +1,35 @@
-# # %%
-# !"$(pip install --upgrade pip)"
-# !"$(pip install pandas scikit-learn numpy matplotlib seaborn)"
-# # %%
-# %load_ext autoreload
-# %autoreload 2
-# # %%
-# from src.eval import CWRUA, CWRUB, read_dataset
-# from src.model import create_model, compile_model, train_model, INPUT_LENGTH
-# from scipy.io import loadmat
-# from tensorflow.keras.models import Model
-# from tensorflow.keras.datasets import fashion_mnist
-# from tensorflow.keras import layers, losses, utils
-# from sklearn.model_selection import train_test_split
-# from sklearn.metrics import accuracy_score, precision_score, recall_score
-# import tensorflow as tf
-# import pandas as pd
-# import numpy as np
-# import matplotlib.pyplot as plt
+# %%
+import numpy as np
+from data import read_dataset, DATASETS
+import torch
+# %%
+a = np.load("FRAN/CWRU_dataset/CWRU_DE.npy", allow_pickle=True)
 
 
-# # %%
-# X_train, y_train = read_dataset(CWRUA, input_length=INPUT_LENGTH)
-# X_test, y_test = read_dataset(CWRUB, input_length=INPUT_LENGTH)
-
-# # %%
-# model = create_model(INPUT_LENGTH)
-# model.summary()
-
-# # %%
-# model = compile_model(model)
-# model, history = train_model(model, X_train, y_train, validation_data=(X_test, y_test))
-
-# # %%
-# plt.plot(history.history["loss"], label="Training Loss")
-# plt.plot(history.history["val_loss"], label="Validation Loss")
-# plt.legend()
-# plt.show()
-# # %%
+x_src_train, y_src_train, x_src_test, y_src_test = read_dataset("dataset",
+                                                                DATASETS["CWRUA"],
+                                                                test_size=0.2,
+                                                                input_length=256,
+                                                                train_overlap=0.8,
+                                                                test_overlap=0.8)
 
 
-# def print_stats(predictions, labels):
-#     print("Accuracy = {}".format(accuracy_score(labels, predictions)))
-#     # print("Precision = {}".format(precision_score(labels, predictions)))
-#     # print("Recall = {}".format(recall_score(labels, predictions)))
+classes, counts = y_src_train.unique(return_counts=True)
+print(classes)
+print(counts)
+min_idx = torch.argmin(counts)
+min_count = int(counts[min_idx])
+min_idx, min_count
+
+for cl in classes:
+    y_src_train = y_src_train.numpy()
+    choices = np.random.choice(y_src_train[y_src_train == cl], min_count)
+
+# %%
 
 
-# y_hat = model(X_test)
-# print_stats(np.argmax(y_hat, axis=1), np.argmax(y_test, axis=1))
-
-# # %%
+x = torch.randint(1, 10, (4, 2))
+print(x)
+# %%
+indices = torch.randperm(len(x))[:4]
+x[indices]

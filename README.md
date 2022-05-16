@@ -1,5 +1,12 @@
 # Machine-Learning-Fault-Analysis
 
+docker run --rm -v $(pwd):/workspace/ --gpus all -it pytorch-gpu python trainer_main.py --accelerator gpu --source CWRUA --target CWRUB --num_classes 4 --batch_size 128 --save_embeddings false --alpha 0.01 -n debug --learning_rate 1e-3
+
+# todo:
+
+- balance classes
+- plot accu/recall/precision
+
 ## FRAN
 
 - 2 conv layer (kernel=2, filter=[32,64])
