@@ -39,11 +39,11 @@ tracker = CheckpointTracker()
 logger = TensorBoardLogger(save_dir="./lightning_logs/", name=args.experiment_name, log_graph=True)
 callbacks = [
     ModelSummary(max_depth=2),
-    EarlyStopping(monitor="total_loss/train", min_delta=0.0, patience=40, mode="min"),
+    EarlyStopping(monitor="accuracy/val/dataloader_idx_1", min_delta=0.0, patience=40, mode="max"),
     ModelCheckpoint(monitor="accuracy/val/dataloader_idx_1", mode="max", verbose=True),
     tracker
 ]
-trainer = pl.Trainer.from_argparse_args(args, callbacks=callbacks, logger=logger)
+trainer = pl.Trainer.from_argparse_args(args, callbacks=callbacks, logger=logger, max_epochs=200)
 
 # TRAIN
 my_model = MyModel(**vars(args))
