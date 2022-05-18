@@ -1,2 +1,4 @@
-grid run --use_spot --auto_resume --instance_type m5a.large --datastore_name cwru \
-trainer_main.py --accelerator auto --data_dir "/datastores/"
+grid run --instance_type "g4dn.xlarge" --datastore_name "cwru" --localdir trainer_main.py --accelerator "auto" --data_dir "/datastores/"
+
+
+#--use_spot --auto_resume
