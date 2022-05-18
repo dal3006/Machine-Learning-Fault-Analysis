@@ -429,7 +429,7 @@ if __name__ == "__main__":
     print("Val")
     i=0
     for x_s, x_t, y_s in data_module.val_dataloader()[1]:
-    plot_batch_multilabel(x_s.squeeze(1), y_s)
+        plot_batch_multilabel(x_s.squeeze(1), y_s)
         plot_batch(x_t.squeeze(1), "x_t")
         i+=1
         if (i > 0):
