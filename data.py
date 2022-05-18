@@ -177,13 +177,10 @@ class MyDataModule(LightningDataModule):
         trg_sz = x_trg_train.size(0)
         if src_sz > trg_sz:
             # Source bigger
-            x_src_train = x_src_train[0:trg_sz]
-            y_src_train = y_src_train[0:trg_sz]
+            [x_src_train, y_src_train] = random_subset_parallel([x_src_train, y_src_train], trg_sz)
         elif trg_sz > src_sz:
             # Target bigger
-            x_trg_train = x_trg_train[0:src_sz]
-            y_trg_train = y_trg_train[0:src_sz]
-
+            [x_trg_train, y_trg_train] = random_subset_parallel([x_trg_train, y_trg_train], src_sz)
 
         print("y_src_train")
         classes, counts = y_src_train.unique(return_counts=True)
@@ -355,12 +352,31 @@ def rebalance_by_removal(classes_samples: List):
     print("Lengths before are: " + str(lengths))
     for i in range(num_classes):
         # random choice without repetition
-        indices = torch.randperm(lengths[i])[:min_length]
-        classes_samples[i] = classes_samples[i][indices]
+        classes_samples[i] = random_subset(classes_samples[i], min_length)
     new_lengths = [len(cl) for cl in classes_samples]
     print("Lengths after are:  " + str(new_lengths))
     return classes_samples
 
+def random_subset(x, length):
+    """
+        Reduce array length by picking random subsamples without repetition
+        x: tensor of shape (N, ...)
+        returns shuffled and subsampled tensor of shape (length, ...)
+    """
+    indices = torch.randperm(len(x))[:length] #TODO: seed this, otherwise pullutes train set on train reload
+    return x[indices]
+
+def random_subset_parallel(parallel_list, length):
+    """
+        parallel-list version of random_subset(x, length)
+        Reduces arrays length by picking random subsamples without repetition
+        all tensors inside list must have the same length
+        parallel_list: [x1, y1, ...]
+    """
+    indices = torch.randperm(len(parallel_list[0]))[:length] #TODO: seed this, otherwise pullutes train set on train reload
+    for i in range(len(parallel_list)):
+        parallel_list[i] = parallel_list[i][indices]
+    return parallel_list
 
 def std_normalization(x):
     assert len(x.shape) == 2
