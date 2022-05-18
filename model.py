@@ -11,7 +11,7 @@ import torch.nn.functional as F
 
 # Choose which hparams to log in tensorboard
 LOG_HPARAMS = ["learning_rate", "num_classes", "mmd_type", "alpha", "beta",
-               "source", "target", "batch_size", "input_length", "test_size", "weight_decay"]
+               "source", "target", "batch_size", "input_length", "test_size", "weight_decay", "reuse_target"]
 
 
 class MMD(nn.Module):
