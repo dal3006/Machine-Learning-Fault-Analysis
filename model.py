@@ -1,3 +1,4 @@
+from ctypes.wintypes import HLOCAL
 from importlib.metadata import metadata
 from typing import List
 import torch
@@ -6,10 +7,11 @@ import pytorch_lightning as pl
 import matplotlib.pyplot as plt
 import seaborn as sns
 import torchmetrics
+import torch.nn.functional as F
 
 # Choose which hparams to log in tensorboard
-LOG_HPARAMS = ["learning_rate", "num_classes", "mmd_type", "alpha",
-               "source", "target", "batch_size", "input_length", "test_size"]
+LOG_HPARAMS = ["learning_rate", "num_classes", "mmd_type", "alpha", "beta",
+               "source", "target", "batch_size", "input_length", "test_size", "weight_decay"]
 
 
 class MMD(nn.Module):
@@ -59,6 +61,10 @@ class MMD(nn.Module):
             loss = torch.mean(XX + YY - XY - YX)
             return loss
 
+def HLoss(x):
+    b = F.softmax(x, dim=1) * F.log_softmax(x, dim=1)
+    b = -1.0 * b.sum()
+    return b
 
 class MyModel(pl.LightningModule):
     def __init__(self, save_embeddings, **kwargs):
@@ -93,6 +99,8 @@ class MyModel(pl.LightningModule):
 
         if self.hparams.alpha > 0:
             self.mmd = MMD(kernel_type=self.hparams.mmd_type)
+        if self.hparams.beta > 0:
+            self.hloss = HLoss
 
         self.classifier = nn.Sequential(
             nn.Linear(448, 32),
@@ -111,6 +119,8 @@ class MyModel(pl.LightningModule):
         parser.add_argument("--learning_rate", type=float, default=0.001)
         parser.add_argument("--mmd_type", type=str, default="rbf")
         parser.add_argument("--alpha", type=float, default=0.01)
+        parser.add_argument("--beta", type=float, default=0.0001)
+        parser.add_argument("--weight_decay", type=float, default=1e-4)
         # OTHER HPARAMS
         parser.add_argument("--num_classes", type=int, default=4)
         parser.add_argument("--save_embeddings", default="false",
@@ -132,22 +142,32 @@ class MyModel(pl.LightningModule):
         x_src = self.encoder(x_src)
         x_src = x_src.view(-1, x_src.shape[1] * x_src.shape[2])  # flatten all dimensions except batch
 
-        if self.hparams.alpha > 0:
+        if self.hparams.alpha > 0 or self.hparams.beta > 0:
             x_trg = self.encoder(x_trg)
             x_trg = x_trg.view(-1, x_trg.shape[1] * x_trg.shape[2])
+
+        if self.hparams.alpha > 0:
             mmd_loss = self.mmd(x_src, x_trg) * self.hparams.alpha
+            self.log("mmd_loss/train", mmd_loss)
         else:
             mmd_loss = 0.0
+
+        if self.hparams.beta > 0:
+            entropy_src = self.hloss(x_src)
+            entropy_trg = self.hloss(x_trg)
+            entropy_sum = (entropy_src+entropy_trg) * self.hparams.beta
+            self.log("entropy_src/train", entropy_src)
+            self.log("entropy_trg/train", entropy_trg)
+            self.log("entropy_sum/train", entropy_sum)
+        else:
+            entropy_sum = 0.0
 
         # Classify
         x_src = self.classifier(x_src)
         classif_loss = self.crossentropy_loss(x_src, y_src)
-
-        total_loss = classif_loss + mmd_loss
+        total_loss = classif_loss + mmd_loss + entropy_sum
         self.log("classificaiton_loss/train", classif_loss)
-        self.log("mmd_loss/train", mmd_loss)
         self.log("total_loss/train", total_loss)
-        self.log("hp_metric", total_loss)
         return total_loss
 
     def validation_step(self, batch, batch_idx, dataloader_idx):
@@ -193,5 +213,5 @@ class MyModel(pl.LightningModule):
             self.logger.experiment.add_embedding(torch.cat(dataloaders_embedd), tag="embeddings", metadata=metadata)
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate, weight_decay=self.hparams.weight_decay)
         return optimizer
