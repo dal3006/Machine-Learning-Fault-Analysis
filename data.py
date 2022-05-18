@@ -373,9 +373,21 @@ if __name__ == "__main__":
     args = parser.parse_args()
     data_module = MyDataModule.from_argparse_args(args)
 
+    print("Train")
     data_module.prepare_data()
-    dataloader = data_module.train_dataloader()
-    batch = next(iter(dataloader))
+    i=0
+    for x_s, x_t, y_s in data_module.train_dataloader():
+        plot_batch_multilabel(x_s.squeeze(1), y_s)
+        plot_batch(x_t.squeeze(1), "x_t")
+        i+=1
+        if (i > 0):
+            break
 
-    x_s, x_t, y_s = batch
+    print("Val")
+    i=0
+    for x_s, x_t, y_s in data_module.val_dataloader()[1]:
     plot_batch_multilabel(x_s.squeeze(1), y_s)
+        plot_batch(x_t.squeeze(1), "x_t")
+        i+=1
+        if (i > 0):
+            break
