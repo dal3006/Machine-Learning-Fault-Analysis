@@ -184,12 +184,39 @@ class MyDataModule(LightningDataModule):
             x_trg_train = x_trg_train[0:src_sz]
             y_trg_train = y_trg_train[0:src_sz]
 
+
+        print("y_src_train")
         classes, counts = y_src_train.unique(return_counts=True)
         ds_size = y_src_train.size(0)
         percents = counts / ds_size * 100
         print("CLASS\tCOUNT\tPERC\tWEIGHT")
         for cl, cnt, perc in zip(classes, counts, percents):
             print(f'{int(cl)}\t{cnt}\t{perc:.1f}%')
+
+        print("y_trg_train")
+        classes, counts = y_trg_train.unique(return_counts=True)
+        ds_size = y_trg_train.size(0)
+        percents = counts / ds_size * 100
+        print("CLASS\tCOUNT\tPERC\tWEIGHT")
+        for cl, cnt, perc in zip(classes, counts, percents):
+            print(f'{int(cl)}\t{cnt}\t{perc:.1f}%')
+
+        print("y_src_test")
+        classes, counts = y_src_test.unique(return_counts=True)
+        ds_size = y_src_test.size(0)
+        percents = counts / ds_size * 100
+        print("CLASS\tCOUNT\tPERC\tWEIGHT")
+        for cl, cnt, perc in zip(classes, counts, percents):
+            print(f'{int(cl)}\t{cnt}\t{perc:.1f}%')
+
+        print("y_trg_test")
+        classes, counts = y_trg_test.unique(return_counts=True)
+        ds_size = y_trg_test.size(0)
+        percents = counts / ds_size * 100
+        print("CLASS\tCOUNT\tPERC\tWEIGHT")
+        for cl, cnt, perc in zip(classes, counts, percents):
+            print(f'{int(cl)}\t{cnt}\t{perc:.1f}%')
+
 
         # Train
         self.x_src_train = x_src_train
