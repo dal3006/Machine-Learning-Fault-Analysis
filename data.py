@@ -117,14 +117,7 @@ DATASETS = {
                   "Normal": "cwru/3/normal*.mat",
                   "Inner race": "cwru/3/IR*.mat",
                   "Outer race": "cwru/3/OR*.mat"
-              }},
-    # 'test': {'sensor': 'DE',
-    #          'classes': {
-    #              "Normal": "cwru/3/normal*.mat",
-    #               "Ball": "cwru/3/B*.mat",
-    #               "Inner race": "cwru/3/IR*.mat",
-    #              "Outer race": "cwru/3/OR*.mat"
-    #          }},
+              }}
 }
 
 
@@ -136,6 +129,7 @@ class MyDataModule(LightningDataModule):
                  test_size: float,
                  input_length: int,
                  batch_size: int,
+                 reuse_target: bool
                  ):
         super().__init__()
         self.data_dir = data_dir
@@ -146,6 +140,7 @@ class MyDataModule(LightningDataModule):
         self.test_size = test_size
         self.input_length = input_length
         self.batch_size = batch_size
+        self.reuse_target = reuse_target
 
     @staticmethod
     def add_argparse_args(parent_parser):
@@ -156,6 +151,8 @@ class MyDataModule(LightningDataModule):
         parser.add_argument("--test_size", type=float, default=0.2)
         parser.add_argument("--input_length", type=int, default=256)
         parser.add_argument("--batch_size", type=int, default=128)
+        parser.add_argument("--reuse_target", default="false",
+                            type=lambda x: (str(x).lower() in ['true', '1', 'yes']))
         return parent_parser
 
     def prepare_data(self):
@@ -185,6 +182,7 @@ class MyDataModule(LightningDataModule):
         elif trg_sz > src_sz:
             # Target bigger
             x_trg_train = x_trg_train[0:src_sz]
+            y_trg_train = y_trg_train[0:src_sz]
 
         classes, counts = y_src_train.unique(return_counts=True)
         ds_size = y_src_train.size(0)
@@ -197,10 +195,11 @@ class MyDataModule(LightningDataModule):
         self.x_src_train = x_src_train
         self.x_trg_train = x_trg_train
         self.y_src_train = y_src_train
+        self.y_trg_train = y_trg_train
         # Test
         self.x_src_test = x_src_test
-        self.y_src_test = y_src_test
         self.x_trg_test = x_trg_test
+        self.y_src_test = y_src_test
         self.y_trg_test = y_trg_test
 
     def train_dataloader(self):
@@ -211,7 +210,11 @@ class MyDataModule(LightningDataModule):
     def val_dataloader(self):
         dataset = TensorDataset(self.x_src_test, self.y_src_test)
         src_test_loader = DataLoader(dataset, batch_size=self.batch_size, num_workers=8)
-        dataset = TensorDataset(self.x_trg_test, self.y_trg_test)
+        if self.reuse_target:
+            print("WARNING: target reuse is enabled")
+            dataset = TensorDataset(self.x_trg_train, self.y_trg_train)
+        else:
+            dataset = TensorDataset(self.x_trg_test, self.y_trg_test)
         trg_test_loader = DataLoader(dataset, batch_size=self.batch_size, num_workers=8)
 
         return [src_test_loader, trg_test_loader]
@@ -272,7 +275,7 @@ def read_dataset(root_dir, conf, input_length, train_overlap, test_overlap, test
             print(cl_path)
             # Load signal from file
             sig = read_class_mat_file(cl_path, conf['sensor'])
-            sig = torch.Tensor(sig)
+            sig = torch.tensor(sig)
 
             # plot_batch(sig[:-(len(sig) % 256)].view(-1, 256)[:32], cl_path)
 
@@ -305,10 +308,10 @@ def read_dataset(root_dir, conf, input_length, train_overlap, test_overlap, test
     y_train = [[i] * len(x) for i, x in enumerate(x_train)]
     y_test = [[i] * len(x) for i, x in enumerate(x_test)]
     # Reshape
-    x_train = torch.cat(x_train)
-    x_test = torch.cat(x_test)
-    y_train = torch.Tensor(y_train).reshape(-1).type(torch.LongTensor)
-    y_test = torch.Tensor(y_test).reshape(-1).type(torch.LongTensor)
+    x_train = torch.cat(x_train).type(torch.FloatTensor)
+    x_test = torch.cat(x_test).type(torch.FloatTensor)
+    y_train = torch.tensor(y_train).reshape(-1).type(torch.LongTensor)
+    y_test = torch.tensor(y_test).reshape(-1).type(torch.LongTensor)
     # Normalize
     x_train = minmax_normalization(x_train)
     x_test = minmax_normalization(x_test)
