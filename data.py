@@ -106,6 +106,18 @@ DATASETS = {
                     "Normal": "cwru/3/normal*.mat",
                     "Fault": "cwru/3/*0*.mat",
                 }},
+    'CWRUA3': {'sensor': 'DE',
+              'classes': {
+                  "Normal": "cwru/0/normal.mat",
+                  "Inner race": "cwru/0/IR*.mat",
+                  "Outer race": "cwru/0/OR*.mat"
+              }},
+    'CWRUB3': {'sensor': 'DE',
+              'classes': {
+                  "Normal": "cwru/3/normal*.mat",
+                  "Inner race": "cwru/3/IR*.mat",
+                  "Outer race": "cwru/3/OR*.mat"
+              }},
     # 'test': {'sensor': 'DE',
     #          'classes': {
     #              "Normal": "cwru/3/normal*.mat",
