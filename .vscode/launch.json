@@ -26,10 +26,10 @@
             "args": [
                 "--autorestore",
                 "false",
-                "--alpha",
-                "0",
-                "--beta",
-                "0",
+                // "--alpha",
+                // "0",
+                // "--beta",
+                // "0",
                 // "--source",
                 // "CWRUA",
                 // "--target",
@@ -48,8 +48,32 @@
                 // "True",
                 "--accelerator",
                 "gpu",
+                // "--max_epochs",
+                // "1"
+            ]
+        },
+        {
+            "name": "grid_search",
+            "type": "python",
+            "request": "launch",
+            "program": "trainer_main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--autorestore",
+                "false",
+                "--grid_search",
+                "true",
+                "--save_embeddings",
+                "false",
+                "--experiment_name",
+                "grid_search",
+                "--learning_rate",
+                "1e-3",
+                "--accelerator",
+                "gpu",
                 "--max_epochs",
-                "2"
+                "1"
             ]
         }
     ]
