@@ -26,8 +26,10 @@
             "args": [
                 "--autorestore",
                 "false",
-                // "--alpha",
-                // "1",
+                "--alpha",
+                "0",
+                "--beta",
+                "0",
                 // "--source",
                 // "CWRUA",
                 // "--target",
@@ -37,7 +39,7 @@
                 // "--batch_size",
                 // "64",
                 "--save_embeddings",
-                "true",
+                "false",
                 "--experiment_name",
                 "debug",
                 "--learning_rate",
@@ -45,7 +47,9 @@
                 // "--detect_anomaly",
                 // "True",
                 "--accelerator",
-                "gpu"
+                "gpu",
+                "--max_epochs",
+                "2"
             ]
         }
     ]
