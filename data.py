@@ -405,8 +405,8 @@ def read_class_mat_file(cl_path: str, sensor: str):
         sig = np.array()
     return sig
 
-
-if __name__ == "__main__":
+# run only in main file
+if __name__ == '__main__':
     """Visualize some batches of data"""
     from argparse import ArgumentParser
     import matplotlib.pyplot as plt

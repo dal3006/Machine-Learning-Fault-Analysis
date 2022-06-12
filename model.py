@@ -1,12 +1,13 @@
-from importlib.metadata import metadata
-from typing import List
 import torch
 from torch import nn
 import pytorch_lightning as pl
-import matplotlib.pyplot as plt
 import seaborn as sns
 import torchmetrics
 import torch.nn.functional as F
+import matplotlib
+
+# Use headless backend for plotting
+matplotlib.use("Agg")
 
 # Choose which hparams to log in tensorboard
 LOG_HPARAMS = ["learning_rate", "num_classes", "mmd_type", "alpha", "beta",
@@ -170,19 +171,18 @@ class MyModel(pl.LightningModule):
         return total_loss
 
     def validation_step(self, batch, batch_idx, dataloader_idx):
-        x, y = batch
+        x, y_true = batch
         x = self.encoder(x)
         embeddings = x.view(x.size(0), -1)
-
         x = self.classifier(embeddings)
-        loss = self.crossentropy_loss(x, y)
         y_hat = self.softmax(x)  # onehot-encoded probabilities
-        preds = torch.argmax(y_hat, axis=1)  # numeric preds
+        y_pred = torch.argmax(y_hat, axis=1)  # numeric preds
         # Compute and log metrics
-        accu = self.metrics.accuracy(preds, y)
-        self.log("classificaiton_loss/val", loss, on_epoch=True)
-        self.log("accuracy/val", accu, on_epoch=True)
-        return {'loss': loss, 'preds': preds, 'target': y, 'embeddings': embeddings, 'dataloader_idx': dataloader_idx}
+        loss = self.crossentropy_loss(x, y_true)
+        accu = self.metrics.accuracy(y_pred, y_true)
+        self.log("accuracy/val", accu)
+        self.log("classificaiton_loss/val", loss)
+        return {'loss': loss, 'y_pred': y_pred, 'y_true': y_true, 'embeddings': embeddings, 'dataloader_idx': dataloader_idx}
 
     def validation_epoch_end(self, dataloaders_outputs):
         dataloaders_embedd = []
@@ -190,22 +190,23 @@ class MyModel(pl.LightningModule):
 
         for outputs in dataloaders_outputs:
             dataloader_name = "dataloader_idx_" + str(outputs[0]["dataloader_idx"])
-            preds = torch.cat([tmp['preds'] for tmp in outputs])
-            targets = torch.cat([tmp['target'] for tmp in outputs])
+            # Put togherer results from all batch steps in this dataloader
+            y_true = torch.cat([tmp['y_true'] for tmp in outputs])
+            y_pred = torch.cat([tmp['y_pred'] for tmp in outputs])
             embeddings = torch.cat([tmp['embeddings'] for tmp in outputs])
 
             # Confusion matrix
-            cm = self.metrics.cm(preds, targets)
-            plt.figure(figsize=(10, 7))
+            cm = self.metrics.cm(y_pred, y_true)
+            matplotlib.pyplot.figure(figsize=(10, 7))
             fig_ = sns.heatmap(cm.cpu(), annot=True, fmt='.2f', cmap='coolwarm').get_figure()
-            plt.close(fig_)
+            matplotlib.pyplot.close(fig_)
             self.logger.experiment.add_figure("cm/val/" + dataloader_name, fig_, self.current_epoch)
 
-            # Pick a random subsample
+            # Pick a random subsample of embeddings for tensorboard plotting
             SUBSAMPLE = 64
             indices = torch.randperm(len(embeddings))[:SUBSAMPLE]
             dataloaders_embedd.append(embeddings[indices])
-            metadata += [f'class{int(t)} set {dataloader_name}' for t in targets[indices]]
+            metadata += [f'class{int(t)} set {dataloader_name}' for t in y_true[indices]]
 
         if self.save_embeddings:
             # Plotter
