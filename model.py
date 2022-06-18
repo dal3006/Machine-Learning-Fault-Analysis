@@ -11,7 +11,7 @@ matplotlib.use("Agg")
 
 # Choose which hparams to log in tensorboard
 LOG_HPARAMS = ["learning_rate", "num_classes", "mmd_type", "alpha", "beta",
-               "source", "target", "batch_size", "input_length", "test_size", "weight_decay", "reuse_target"]
+               "source", "target", "batch_size", "input_length", "test_size", "weight_decay", "reuse_target", "lr_patience", "lr_factor"]
 
 
 class MMD(nn.Module):
@@ -117,6 +117,8 @@ class MyModel(pl.LightningModule):
         parser = parent_parser.add_argument_group("MyModel")
         # HPARAMS
         parser.add_argument("--learning_rate", type=float, default=0.001)
+        parser.add_argument("--lr_factor", type=float, default=0.1)
+        parser.add_argument("--lr_patience", type=int, default=20)
         parser.add_argument("--mmd_type", type=str, default="rbf")
         parser.add_argument("--alpha", type=float, default=0.01)
         parser.add_argument("--beta", type=float, default=0.0001)
@@ -214,4 +216,17 @@ class MyModel(pl.LightningModule):
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate, weight_decay=self.hparams.weight_decay)
-        return optimizer
+        lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode="max",
+             verbose=True,
+             patience=self.hparams.lr_patience,
+             factor=self.hparams.lr_factor,)
+        # reduce every epoch (default)
+        scheduler = {
+            'scheduler': lr_scheduler,
+            'reduce_on_plateau': True,
+            # val_checkpoint_on is val_loss passed in as checkpoint_on
+            'monitor': 'accuracy/val/dataloader_idx_0'
+        }
+        return [optimizer], [scheduler]
