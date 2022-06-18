@@ -120,7 +120,7 @@ class MyModel(pl.LightningModule):
         parser.add_argument("--lr_factor", type=float, default=0.1)
         parser.add_argument("--lr_patience", type=int, default=20)
         parser.add_argument("--mmd_type", type=str, default="rbf")
-        parser.add_argument("--alpha", type=float, default=0.01)
+        parser.add_argument("--alpha", type=float, default=0.0001)
         parser.add_argument("--beta", type=float, default=0.0001)
         parser.add_argument("--weight_decay", type=float, default=1e-4)
         # OTHER HPARAMS
