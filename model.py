@@ -184,6 +184,13 @@ class MyModel(pl.LightningModule):
         accu = self.metrics.accuracy(y_pred, y_true)
         self.log("accuracy/val", accu)
         self.log("classificaiton_loss/val", loss)
+
+        # Log target accuracy as hyperparameter metric
+        # this is very useful when combined with grid search
+        # and tensorboard hparams tab
+        if dataloader_idx == 1:
+            self.log("hp_metric", accu)
+
         return {'loss': loss, 'y_pred': y_pred, 'y_true': y_true, 'embeddings': embeddings, 'dataloader_idx': dataloader_idx}
 
     def validation_epoch_end(self, dataloaders_outputs):
