@@ -76,12 +76,17 @@ class MyModel(pl.LightningModule):
             'accuracy': torchmetrics.Accuracy()
         })
         self.encoder = nn.Sequential(
-            nn.Conv1d(in_channels=1, out_channels=32, kernel_size=3),
+            nn.Conv1d(in_channels=1, out_channels=32, kernel_size=11, stride=1),
+
+            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=7, stride=1, groups=32),
+            nn.LayerNorm([240]),
             # nn.BatchNorm1d(32),
+            nn.Conv1d(in_channels=32, out_channels=128, kernel_size=1, stride=1),
             nn.GELU(),
+            nn.Conv1d(in_channels=128, out_channels=32, kernel_size=1, stride=1),
             nn.MaxPool1d(kernel_size=2),
 
-            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=3),
+            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=7),
             # nn.BatchNorm1d(32),
             nn.GELU(),
             nn.MaxPool1d(kernel_size=2),
@@ -103,7 +108,7 @@ class MyModel(pl.LightningModule):
             self.hloss = HLoss
 
         self.classifier = nn.Sequential(
-            nn.Linear(448, 32),
+            nn.Linear(384, 32),
             nn.GELU(),
             nn.Linear(32, self.hparams.num_classes),
         )
@@ -116,12 +121,12 @@ class MyModel(pl.LightningModule):
     def add_argparse_args(parent_parser):
         parser = parent_parser.add_argument_group("MyModel")
         # HPARAMS
-        parser.add_argument("--learning_rate", type=float, default=0.001)
+        parser.add_argument("--learning_rate", type=float, default=1e-3)
         parser.add_argument("--lr_factor", type=float, default=0.1)
-        parser.add_argument("--lr_patience", type=int, default=20)
+        parser.add_argument("--lr_patience", type=int, default=15)
         parser.add_argument("--mmd_type", type=str, default="rbf")
-        parser.add_argument("--alpha", type=float, default=0.0001)
-        parser.add_argument("--beta", type=float, default=0.0001)
+        parser.add_argument("--alpha", type=float, default=1e-3)
+        parser.add_argument("--beta", type=float, default=1e-3)
         parser.add_argument("--weight_decay", type=float, default=1e-4)
         # OTHER HPARAMS
         parser.add_argument("--num_classes", type=int, default=4)
@@ -234,6 +239,6 @@ class MyModel(pl.LightningModule):
             'scheduler': lr_scheduler,
             'reduce_on_plateau': True,
             # val_checkpoint_on is val_loss passed in as checkpoint_on
-            'monitor': 'accuracy/val/dataloader_idx_0'
+            'monitor': 'accuracy/val/dataloader_idx_1'
         }
         return [optimizer], [scheduler]
