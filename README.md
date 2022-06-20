@@ -1,20 +1,34 @@
 # Machine-Learning-Fault-Analysis
 
+This repo contains research code related to my master's theses.
+The project consists in a PyTorch model which is able to perform fault detection and isolation using vibrations coming from ball bearings.
+
+The project aims at performing fault detection on unlabeled datasets never seen by the model. We achieve this by making heavy use of state-of-the-art transfer learning techniques and semi-supervised training.
+
+**Note**: Currently the project is in a work-in-progress state, so breaking changes may happen at any time.
+
+# Usage
+
+Run training in a docker container leveraging all GPUs
+
+```sh
 docker run --rm -v $(pwd):/workspace/ --gpus all -it pytorch-gpu python trainer_main.py --accelerator gpu --source CWRUA --target CWRUB --num_classes 4 --batch_size 128 --save_embeddings false --alpha 0.01 -n debug --learning_rate 1e-3
+```
 
-# todo:
+Run training in the cloud using [Grid.AI](https://grid.ai)
 
-- balance classes
-- plot accu/recall/precision
+```sh
+grid run --datastore_name "cwru" \
+trainer_main.py --data_dir "/datastores/" --accelerator cpu --autorestore false  \
+    --grid_search true --save_embeddings false --experiment_name grid_search --learning_rate 1e-3 --max_epochs 80
+```
 
-## FRAN
+# Credits
 
-- 2 conv layer (kernel=2, filter=[32,64])
-- 2 max pool
-- 1000 FC (WHAT)
-- 3 FC (not 4?)
+This project is heavily inspired on the paper [Unsupervised Cross-domain Fault Diagnosis Using Feature Representation Alignment Networks for Rotating Machinery](https://ieeexplore.ieee.org/abstract/document/9301443)
+For training/testing we are using the CWRU dataset from [Case Western Reserve University, Cleveland, Ohio](https://engineering.case.edu/bearingdatacenter/download-data-file)
 
-### Dataset
+# Dataset
 
 #### Bearing fault diagnosis
 
