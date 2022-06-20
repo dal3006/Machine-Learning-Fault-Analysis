@@ -38,7 +38,7 @@
                 // "4",
                 // "--batch_size",
                 // "64",
-                "--save_embeddings",
+                " ",
                 "false",
                 "--experiment_name",
                 "debug",
