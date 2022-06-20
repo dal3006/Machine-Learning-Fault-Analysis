@@ -66,6 +66,38 @@ def HLoss(x):
     b = -1.0 * b.sum()
     return b
 
+class ResNextBlock(nn.Module):
+    def __init__(self, in_channels, hidden_channels, out_channels, in_sz):
+        super().__init__()
+        # if downsample:
+        #     self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=2, padding=1)
+        #     self.shortcut = nn.Sequential(
+        #         nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=2),
+        #         nn.BatchNorm2d(out_channels)
+        #     )
+        # else:
+        self.shortcut = nn.Sequential()
+
+        self.conv1 = nn.Conv1d(in_channels, in_channels, kernel_size=7, stride=1, padding=3, groups=in_channels)
+        self.norm = nn.LayerNorm([in_sz])
+        self.conv2 = nn.Conv1d(in_channels, hidden_channels, kernel_size=1, stride=1)
+        self.conv3 = nn.Conv1d(hidden_channels, out_channels, kernel_size=1, stride=1)
+
+        # self.mainpass = nn.Sequential(
+        #     nn.Conv1d(in_channels, in_channels, kernel_size=7, stride=1, padding=3, groups=in_channels),
+        #     nn.LayerNorm([246]),
+        #     nn.Conv1d(in_channels, hidden_channels, kernel_size=1, stride=1),
+        #     nn.GELU(),
+        #     nn.Conv1d(hidden_channels, out_channels, kernel_size=1, stride=1),
+        # )
+
+    def forward(self, input):
+        shortcut = self.shortcut(input)
+        x = self.norm(self.conv1(input))
+        x =  nn.GELU()(self.conv2(x))
+        x = self.conv3(x)
+        return x + shortcut
+
 class MyModel(pl.LightningModule):
     def __init__(self, save_embeddings, **kwargs):
         super().__init__()
@@ -78,28 +110,37 @@ class MyModel(pl.LightningModule):
         self.encoder = nn.Sequential(
             nn.Conv1d(in_channels=1, out_channels=32, kernel_size=11, stride=1),
 
-            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=7, stride=1, groups=32),
-            nn.LayerNorm([240]),
-            # nn.BatchNorm1d(32),
-            nn.Conv1d(in_channels=32, out_channels=128, kernel_size=1, stride=1),
-            nn.GELU(),
-            nn.Conv1d(in_channels=128, out_channels=32, kernel_size=1, stride=1),
+            # nn.Conv1d(in_channels=32, out_channels=32, kernel_size=7, stride=1, groups=32),
+            # nn.LayerNorm([240]),
+            # nn.Conv1d(in_channels=32, out_channels=128, kernel_size=1, stride=1),
+            # nn.GELU(),
+            # nn.Conv1d(in_channels=128, out_channels=32, kernel_size=1, stride=1),
+            ResNextBlock(in_channels=32, hidden_channels=32*4, out_channels=32, in_sz=246),
             nn.MaxPool1d(kernel_size=2),
 
-            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=7),
-            # nn.BatchNorm1d(32),
-            nn.GELU(),
+            ResNextBlock(in_channels=32, hidden_channels=32*4, out_channels=32, in_sz=123),
             nn.MaxPool1d(kernel_size=2),
 
-            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=3),
-            # nn.BatchNorm1d(32),
-            nn.GELU(),
+            ResNextBlock(in_channels=32, hidden_channels=32*4, out_channels=32, in_sz=61),
             nn.MaxPool1d(kernel_size=2),
 
-            nn.Conv1d(in_channels=32, out_channels=32, kernel_size=3),
-            # nn.BatchNorm1d(32),
-            nn.GELU(),
+            ResNextBlock(in_channels=32, hidden_channels=32*4, out_channels=32, in_sz=30),
             nn.MaxPool1d(kernel_size=2),
+
+            # nn.Conv1d(in_channels=32, out_channels=32, kernel_size=7),
+            # # nn.BatchNorm1d(32),
+            # nn.GELU(),
+            # nn.MaxPool1d(kernel_size=2),
+
+            # nn.Conv1d(in_channels=32, out_channels=32, kernel_size=3),
+            # # nn.BatchNorm1d(32),
+            # nn.GELU(),
+            # nn.MaxPool1d(kernel_size=2),
+
+            # nn.Conv1d(in_channels=32, out_channels=32, kernel_size=3),
+            # # nn.BatchNorm1d(32),
+            # nn.GELU(),
+            # nn.MaxPool1d(kernel_size=2),
         )
 
         if self.hparams.alpha > 0:
@@ -108,10 +149,13 @@ class MyModel(pl.LightningModule):
             self.hloss = HLoss
 
         self.classifier = nn.Sequential(
-            nn.Linear(384, 32),
+            nn.Linear(480, 50),
             nn.GELU(),
-            nn.Linear(32, self.hparams.num_classes),
+            nn.Linear(50, 42),
+            nn.GELU(),
+            nn.Linear(42, self.hparams.num_classes),
         )
+        # python trainer_main.py --accelerator gpu --gpus 1 --save_embeddings false --experiment_name baseline --lr_patience 30 --learning_rate 1e-3 --alpha 0 --beta 0
         self.softmax = nn.Softmax(dim=1)
         self.crossentropy_loss = nn.CrossEntropyLoss()
         # required to plot model computational graph on tensorboard
@@ -121,9 +165,9 @@ class MyModel(pl.LightningModule):
     def add_argparse_args(parent_parser):
         parser = parent_parser.add_argument_group("MyModel")
         # HPARAMS
-        parser.add_argument("--learning_rate", type=float, default=1e-3)
+        parser.add_argument("--learning_rate", type=float, default=7e-4)
         parser.add_argument("--lr_factor", type=float, default=0.1)
-        parser.add_argument("--lr_patience", type=int, default=15)
+        parser.add_argument("--lr_patience", type=int, default=10)
         parser.add_argument("--mmd_type", type=str, default="rbf")
         parser.add_argument("--alpha", type=float, default=1e-3)
         parser.add_argument("--beta", type=float, default=1e-3)
@@ -239,6 +283,6 @@ class MyModel(pl.LightningModule):
             'scheduler': lr_scheduler,
             'reduce_on_plateau': True,
             # val_checkpoint_on is val_loss passed in as checkpoint_on
-            'monitor': 'accuracy/val/dataloader_idx_1'
+            'monitor': 'total_loss/train'
         }
         return [optimizer], [scheduler]
