@@ -1,3 +1,5 @@
+#%%
+
 from typing import List
 from pytorch_lightning.core import LightningDataModule
 import torch
@@ -11,6 +13,7 @@ import os
 # Note that 'classes' order matter
 DATASETS = {
     'DE007': {
+        'format': 'mat',
         'sensor': 'DE',
         'classes': {
             "Normal": "cwru/*/normal.mat",
@@ -20,6 +23,7 @@ DATASETS = {
         }
     },
     'DE014': {
+        'format': 'mat',
         'sensor': 'DE',
         'classes': {
             "Normal": "cwru/*/normal.mat",
@@ -29,6 +33,7 @@ DATASETS = {
         }
     },
     'DE021': {
+        'format': 'mat',
         'sensor': 'DE',
         'classes': {
             "Normal": "cwru/*/normal.mat",
@@ -38,6 +43,7 @@ DATASETS = {
         }
     },
     'FE007': {
+        'format': 'mat',
         'sensor': 'FE',
         'classes': {
             "Normal": "cwru/*/normal.mat",
@@ -47,6 +53,7 @@ DATASETS = {
         }
     },
     'FE014': {
+        'format': 'mat',
         'sensor': 'FE',
         'classes': {
             "Normal": "cwru/*/normal.mat",
@@ -56,6 +63,7 @@ DATASETS = {
         }
     },
     'FE021': {
+        'format': 'mat',
         'sensor': 'FE',
         'classes': {
             "Normal": "cwru/*/normal.mat",
@@ -65,6 +73,7 @@ DATASETS = {
         }
     },
     'DE': {
+        'format': 'mat',
         'sensor': 'DE',
         'classes': {
             "Normal": "cwru/*/normal.mat",
@@ -74,6 +83,7 @@ DATASETS = {
         }
     },
     'FE': {
+        'format': 'mat',
         'sensor': 'FE',
         'classes': {
             "Normal": "cwru/*/normal.mat",
@@ -82,42 +92,62 @@ DATASETS = {
             "Outer race": "cwru/*/OR*@*.mat"
         }
     },
-    'CWRUA': {'sensor': 'DE',
-              'classes': {
-                  "Normal": "cwru/0/normal.mat",
-                  "Ball": "cwru/0/B*.mat",
-                  "Inner race": "cwru/0/IR*.mat",
-                  "Outer race": "cwru/0/OR*.mat"
+    'CWRUA': {
+        'format': 'mat',
+        'sensor': 'DE',
+        'classes': {
+            "Normal": "cwru/0/normal.mat",
+            "Ball": "cwru/0/B*.mat",
+            "Inner race": "cwru/0/IR*.mat",
+            "Outer race": "cwru/0/OR*.mat"
+        }},
+    'CWRUB': {
+        'format': 'mat',
+        'sensor': 'DE',
+        'classes': {
+            "Normal": "cwru/3/normal*.mat",
+            "Ball": "cwru/3/B*.mat",
+            "Inner race": "cwru/3/IR*.mat",
+            "Outer race": "cwru/3/OR*.mat"
+        }},
+    'CWRUA2': {
+        'format': 'mat',
+        'sensor': 'DE',
+        'classes': {
+            "Normal": "cwru/0/normal.mat",
+            "Fault": "cwru/0/*0*.mat",
+        }},
+    'CWRUB2': {
+        'format': 'mat',
+        'sensor': 'DE',
+        'classes': {
+            "Normal": "cwru/3/normal*.mat",
+            "Fault": "cwru/3/*0*.mat",
+        }},
+    'CWRUA3': {
+        'format': 'mat',
+        'sensor': 'DE',
+        'classes': {
+            "Normal": "cwru/0/normal.mat",
+            "Inner race": "cwru/0/IR*.mat",
+            "Outer race": "cwru/0/OR*.mat"
               }},
-    'CWRUB': {'sensor': 'DE',
-              'classes': {
-                  "Normal": "cwru/3/normal*.mat",
-                  "Ball": "cwru/3/B*.mat",
-                  "Inner race": "cwru/3/IR*.mat",
-                  "Outer race": "cwru/3/OR*.mat"
-              }},
-    'CWRUAfd': {'sensor': 'DE',
-                'classes': {
-                    "Normal": "cwru/0/normal.mat",
-                    "Fault": "cwru/0/*0*.mat",
-                }},
-    'CWRUBfd': {'sensor': 'DE',
-                'classes': {
-                    "Normal": "cwru/3/normal*.mat",
-                    "Fault": "cwru/3/*0*.mat",
-                }},
-    'CWRUA3': {'sensor': 'DE',
-              'classes': {
-                  "Normal": "cwru/0/normal.mat",
-                  "Inner race": "cwru/0/IR*.mat",
-                  "Outer race": "cwru/0/OR*.mat"
-              }},
-    'CWRUB3': {'sensor': 'DE',
-              'classes': {
-                  "Normal": "cwru/3/normal*.mat",
-                  "Inner race": "cwru/3/IR*.mat",
-                  "Outer race": "cwru/3/OR*.mat"
-              }}
+    'CWRUB3': {
+        'format': 'mat',
+        'sensor': 'DE',
+        'classes': {
+            "Normal": "cwru/3/normal*.mat",
+            "Inner race": "cwru/3/IR*.mat",
+            "Outer race": "cwru/3/OR*.mat"
+        }
+    },
+    'CAL2-NI': {
+        'format': 'npy',
+        'classes': {
+            "Normal": "mandelli/test_H0/01_prove_lunghe_acc_cuscinetto_alto_basso/1000/*accelerometer*.npy",
+            "Inner race": "mandelli/test_A_fault_cuscinetto_pitting/01_prove_lunghe_acc_cuscinetto/1000/*accelerometer*.npy"
+        }
+    }
 }
 
 
@@ -297,8 +327,15 @@ def read_dataset(root_dir, conf, input_length, train_overlap, test_overlap, test
         class_sampl_test = []
         for cl_path in glob.glob(os.path.join(root_dir, class_regex)):
             print(cl_path)
-            # Load signal from file
-            sig = read_class_mat_file(cl_path, conf['sensor'])
+
+            # Load signal
+            if conf['format'] == 'mat':
+                # Parse matlab format
+                sig = read_class_mat_file(cl_path, conf['sensor'])
+            elif conf['format'] == 'npy':
+                # Parse preprocessed numpy format
+                sig = np.load(cl_path)
+
             sig = torch.tensor(sig)
 
             # plot_batch(sig[:-(len(sig) % 256)].view(-1, 256)[:32], cl_path)
@@ -416,21 +453,35 @@ if __name__ == '__main__':
     args = parser.parse_args()
     data_module = MyDataModule.from_argparse_args(args)
 
-    print("Train")
-    data_module.prepare_data()
-    i=0
-    for x_s, x_t, y_s in data_module.train_dataloader():
-        plot_batch_multilabel(x_s.squeeze(1), y_s)
-        plot_batch(x_t.squeeze(1), "x_t")
-        i+=1
-        if (i > 0):
-            break
 
-    print("Val")
-    i=0
-    for x_s, x_t, y_s in data_module.val_dataloader()[1]:
-        plot_batch_multilabel(x_s.squeeze(1), y_s)
-        plot_batch(x_t.squeeze(1), "x_t")
-        i+=1
-        if (i > 0):
-            break
+    # plot a random sample from data_module
+    data_module.prepare_data()
+    x_s, x_t, y_s = next(iter(data_module.train_dataloader()))
+
+    # for each class
+    for class_idx in y_s.unique():
+        # for each sample in class
+        for i, sig in enumerate(x_s[y_s == class_idx]):
+            plt.figure()
+            plt.plot(sig.squeeze(0))
+            plt.title(f'Class {class_idx} sample #{i}')
+            plt.show()
+
+    # print("Train")
+    # data_module.prepare_data()
+    # i=0
+    # for x_s, x_t, y_s in data_module.train_dataloader():
+    #     plot_batch_multilabel(x_s.squeeze(1), y_s)
+    #     plot_batch(x_t.squeeze(1), "x_t")
+    #     i+=1
+    #     if (i > 0):
+    #         break
+
+    # print("Val")
+    # i=0
+    # for x_s, x_t, y_s in data_module.val_dataloader()[1]:
+    #     plot_batch_multilabel(x_s.squeeze(1), y_s)
+    #     plot_batch(x_t.squeeze(1), "x_t")
+    #     i+=1
+    #     if (i > 0):
+    #         break
