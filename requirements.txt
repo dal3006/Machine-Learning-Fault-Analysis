@@ -7,3 +7,4 @@ matplotlib
 scikit-learn
 opencv-python-headless
 seaborn
+npTDMS[hdf,pandas,thermocouple_scaling]
