@@ -141,13 +141,23 @@ DATASETS = {
             "Outer race": "cwru/3/OR*.mat"
         }
     },
+    # CAL 2-class Normal/Inner
     'CAL2-NI': {
         'format': 'npy',
         'classes': {
             "Normal": "mandelli/test_H0/01_prove_lunghe_acc_cuscinetto_alto_basso/1000/*accelerometer*.npy",
             "Inner race": "mandelli/test_A_fault_cuscinetto_pitting/01_prove_lunghe_acc_cuscinetto/1000/*accelerometer*.npy"
         }
-    }
+    },
+    # CWRUA 2-class Normal/Inner
+    'CWRUA2-NI': {
+        'format': 'mat',
+        'sensor': 'DE',
+        'classes': {
+            "Normal": "cwru/0/normal.mat",
+            "Inner race": "cwru/0/IR*.mat",
+        }
+    },
 }
 
 
@@ -456,15 +466,27 @@ if __name__ == '__main__':
 
     # plot a random sample from data_module
     data_module.prepare_data()
-    x_s, x_t, y_s = next(iter(data_module.train_dataloader()))
 
+    # Preview train batch
+    # x_s, x_t, y_s = next(iter(data_module.train_dataloader()))
+    # # for each class
+    # for class_idx in y_s.unique():
+    #     # for each sample in class
+    #     for i, sig in enumerate(x_s[y_s == class_idx]):
+    #         plt.figure()
+    #         plt.plot(sig.squeeze(0))
+    #         plt.title(f'[SOURCE DATASET TRAIN] Class {class_idx} sample #{i}')
+    #         plt.show()
+
+    # Preview target validation batch
+    x_t, y_t = next(iter(data_module.val_dataloader()[1]))
     # for each class
-    for class_idx in y_s.unique():
+    for class_idx in y_t.unique():
         # for each sample in class
-        for i, sig in enumerate(x_s[y_s == class_idx]):
+        for i, sig in enumerate(x_t[y_t == class_idx]):
             plt.figure()
             plt.plot(sig.squeeze(0))
-            plt.title(f'Class {class_idx} sample #{i}')
+            plt.title(f'[TARGET DATASET VAL] Class {class_idx} sample #{i}')
             plt.show()
 
     # print("Train")
