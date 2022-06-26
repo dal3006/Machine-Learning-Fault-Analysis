@@ -235,8 +235,11 @@ class MyDataModule(LightningDataModule):
         dataset = TensorDataset(self.x_src_test, self.y_src_test)
         src_test_loader = DataLoader(dataset, batch_size=self.batch_size, num_workers=8)
         if self.reuse_target:
-            print("WARNING: target reuse is enabled")
+            print("!!!!!!!!!!!!!! WARNING: target reuse is enabled !!!!!!!!!!!!!!")
+            print("!!!!!!!!!!!!!! WARNING: target reuse is enabled !!!!!!!!!!!!!!")
+            print("!!!!!!!!!!!!!! WARNING: target reuse is enabled !!!!!!!!!!!!!!")
             dataset = TensorDataset(self.x_trg_train, self.y_trg_train)
+            raise Exception("Probably you don't want to enable target reuse.")
         else:
             dataset = TensorDataset(self.x_trg_test, self.y_trg_test)
         trg_test_loader = DataLoader(dataset, batch_size=self.batch_size, num_workers=8)

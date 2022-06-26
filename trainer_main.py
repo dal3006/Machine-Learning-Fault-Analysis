@@ -93,6 +93,5 @@ if args.grid_search:
             df = df.append({'alpha': a, 'beta': b, 'accuracy': best_accu}, ignore_index=True)
             # save dataframe in a csv with current time in filename
             df.to_csv(csv_filename)
-            df.to_csv('gridsearch.csv')
 else:
     train(args_dict)
