@@ -92,7 +92,7 @@ DATASETS = {
             "Outer race": "cwru/*/OR*@*.mat"
         }
     },
-    'CWRUA': {
+    'CWRUA4': {
         'format': 'mat',
         'sensor': 'DE',
         'classes': {
@@ -101,7 +101,7 @@ DATASETS = {
             "Inner race": "cwru/0/IR*.mat",
             "Outer race": "cwru/0/OR*.mat"
         }},
-    'CWRUB': {
+    'CWRUB4': {
         'format': 'mat',
         'sensor': 'DE',
         'classes': {
