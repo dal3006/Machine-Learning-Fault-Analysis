@@ -468,26 +468,40 @@ if __name__ == '__main__':
     data_module.prepare_data()
 
     # Preview train batch
-    # x_s, x_t, y_s = next(iter(data_module.train_dataloader()))
-    # # for each class
-    # for class_idx in y_s.unique():
-    #     # for each sample in class
-    #     for i, sig in enumerate(x_s[y_s == class_idx]):
-    #         plt.figure()
-    #         plt.plot(sig.squeeze(0))
-    #         plt.title(f'[SOURCE DATASET TRAIN] Class {class_idx} sample #{i}')
-    #         plt.show()
-
-    # Preview target validation batch
-    x_t, y_t = next(iter(data_module.val_dataloader()[1]))
+    x_s, x_t, y_s = next(iter(data_module.train_dataloader()))
     # for each class
-    for class_idx in y_t.unique():
+    for class_idx in y_s.unique():
         # for each sample in class
-        for i, sig in enumerate(x_t[y_t == class_idx]):
+        for i, sig in enumerate(x_s[y_s == class_idx]):
             plt.figure()
             plt.plot(sig.squeeze(0))
-            plt.title(f'[TARGET DATASET VAL] Class {class_idx} sample #{i}')
+            plt.title(f'[SOURCE DATASET TRAIN] Class {class_idx} sample #{i}')
             plt.show()
+
+    # Preview target validation batch (first batch, val dataset is not mixed)
+    # x_t, y_t = next(iter(data_module.val_dataloader()[1]))
+    # # for each class
+    # for class_idx in y_t.unique():
+    #     # for each sample in class
+    #     for i, sig in enumerate(x_t[y_t == class_idx]):
+    #         plt.figure()
+    #         plt.plot(sig.squeeze(0))
+    #         plt.title(f'[TARGET DATASET VAL] Class {class_idx} sample #{i}')
+    #         plt.show()
+
+    # preview last val batch
+    # lastbatch = None
+    # for batch in data_module.val_dataloader()[1]:
+    #     lastbatch = batch
+    # x_t, y_t = lastbatch
+    # # for each class
+    # for class_idx in y_t.unique():
+    #     # for each sample in class
+    #     for i, sig in enumerate(x_t[y_t == class_idx]):
+    #         plt.figure()
+    #         plt.plot(sig.squeeze(0))
+    #         plt.title(f'[TARGET DATASET VAL] Class {class_idx} sample #{i}')
+    #         plt.show()
 
     # print("Train")
     # data_module.prepare_data()

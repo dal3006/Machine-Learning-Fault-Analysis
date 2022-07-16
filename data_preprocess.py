@@ -76,7 +76,7 @@ for filepath in paths:
 from data import minmax_normalization
 import torch
 
-paths = glob.glob("dataset/mandelli/test_H0/01_prove_lunghe_acc_cuscinetto_alto_basso/1000/*accelerometer*.npy")
+# paths = glob.glob("dataset/mandelli/test_H0/01_prove_lunghe_acc_cuscinetto_alto_basso/1000/*accelerometer*.npy")
 paths = glob.glob("dataset/mandelli/test_A_fault_cuscinetto_pitting/01_prove_lunghe_acc_cuscinetto/1000/*accelerometer*.npy")
 
 for filepath in paths:
@@ -94,3 +94,5 @@ for filepath in paths:
     plt.figure()
     plt.plot(sig_tensor.squeeze(0))
     plt.show()
+
+# %%
