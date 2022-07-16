@@ -166,7 +166,7 @@ class MyModel(pl.LightningModule):
         parser = parent_parser.add_argument_group("MyModel")
         # HPARAMS
         parser.add_argument("--learning_rate", type=float, default=7e-4)
-        parser.add_argument("--lr_factor", type=float, default=0.1)
+        parser.add_argument("--lr_factor", type=float, default=0.8)
         parser.add_argument("--lr_patience", type=int, default=10)
         parser.add_argument("--mmd_type", type=str, default="rbf")
         parser.add_argument("--alpha", type=float, default=1e-3)
@@ -274,7 +274,7 @@ class MyModel(pl.LightningModule):
         optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate, weight_decay=self.hparams.weight_decay)
         lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer,
-            mode="max",
+            mode="min",
              verbose=True,
              patience=self.hparams.lr_patience,
              factor=self.hparams.lr_factor,)
