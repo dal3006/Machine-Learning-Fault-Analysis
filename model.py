@@ -143,8 +143,8 @@ class MyModel(pl.LightningModule):
             # nn.MaxPool1d(kernel_size=2),
         )
 
-        if self.hparams.alpha > 0:
-            self.mmd = MMD(kernel_type=self.hparams.mmd_type)
+        # if self.hparams.alpha > 0:
+        self.mmd = MMD(kernel_type=self.hparams.mmd_type)
         if self.hparams.beta > 0:
             self.hloss = HLoss
 
@@ -165,12 +165,12 @@ class MyModel(pl.LightningModule):
     def add_argparse_args(parent_parser):
         parser = parent_parser.add_argument_group("MyModel")
         # HPARAMS
-        parser.add_argument("--learning_rate", type=float, default=7e-4)
-        parser.add_argument("--lr_factor", type=float, default=0.8)
+        parser.add_argument("--learning_rate", type=float, default=1e-4)
+        parser.add_argument("--lr_factor", type=float, default=0.5)
         parser.add_argument("--lr_patience", type=int, default=10)
         parser.add_argument("--mmd_type", type=str, default="rbf")
-        parser.add_argument("--alpha", type=float, default=1e-3)
-        parser.add_argument("--beta", type=float, default=1e-3)
+        parser.add_argument("--alpha", type=float, default=1)
+        parser.add_argument("--beta", type=float, default=0)
         parser.add_argument("--weight_decay", type=float, default=1e-4)
         # OTHER HPARAMS
         parser.add_argument("--num_classes", type=int, default=4)
@@ -193,15 +193,15 @@ class MyModel(pl.LightningModule):
         x_src = self.encoder(x_src)
         x_src = x_src.view(-1, x_src.shape[1] * x_src.shape[2])  # flatten all dimensions except batch
 
-        if self.hparams.alpha > 0 or self.hparams.beta > 0:
-            x_trg = self.encoder(x_trg)
-            x_trg = x_trg.view(-1, x_trg.shape[1] * x_trg.shape[2])
+        # if self.hparams.alpha > 0 or self.hparams.beta > 0:
+        x_trg = self.encoder(x_trg)
+        x_trg = x_trg.view(-1, x_trg.shape[1] * x_trg.shape[2])
 
-        if self.hparams.alpha > 0:
-            mmd_loss = self.mmd(x_src, x_trg) * self.hparams.alpha
-            self.log("mmd_loss/train", mmd_loss)
-        else:
-            mmd_loss = 0.0
+        # if self.hparams.alpha > 0:
+        mmd_loss = self.mmd(x_src, x_trg)
+        self.log("mmd_loss/train", mmd_loss)
+        # else:
+        #     mmd_loss = 0.0
 
         if self.hparams.beta > 0:
             entropy_src = self.hloss(x_src)
@@ -216,7 +216,7 @@ class MyModel(pl.LightningModule):
         # Classify
         x_src = self.classifier(x_src)
         classif_loss = self.crossentropy_loss(x_src, y_src)
-        total_loss = classif_loss + mmd_loss + entropy_sum
+        total_loss = classif_loss + mmd_loss * self.hparams.alpha + entropy_sum
         self.log("classificaiton_loss/train", classif_loss)
         self.log("total_loss/train", total_loss)
         return total_loss
