@@ -149,6 +149,14 @@ DATASETS = {
             "Inner race": "mandelli/test_A_fault_cuscinetto_pitting/01_prove_lunghe_acc_cuscinetto/1000/*accelerometer*.npy"
         }
     },
+    # CAL 2-class Normal/Inner with reversed classes
+    'CAL2-NI-REVERSED': {
+        'format': 'npy',
+        'classes': {
+            "Inner race": "mandelli/test_A_fault_cuscinetto_pitting/01_prove_lunghe_acc_cuscinetto/1000/*accelerometer*.npy",
+            "Normal": "mandelli/test_H0/01_prove_lunghe_acc_cuscinetto_alto_basso/1000/*accelerometer*.npy",
+        }
+    },
     # CWRUA 2-class Normal/Inner
     'CWRUA2-NI': {
         'format': 'mat',
