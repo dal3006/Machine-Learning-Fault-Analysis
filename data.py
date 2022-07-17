@@ -16,129 +16,129 @@ DATASETS = {
         'format': 'mat',
         'sensor': 'DE',
         'classes': {
-            "Normal": "cwru/*/normal.mat",
-            "Ball": "cwru/*/B007.mat",
-            "Inner race": "cwru/*/IR007.mat",
-            "Outer race": "cwru/*/OR007@*.mat"
+            "NORM": "cwru/*/normal.mat",
+            "BALL": "cwru/*/B007.mat",
+            "INNER": "cwru/*/IR007.mat",
+            "OUTER": "cwru/*/OR007@*.mat"
         }
     },
     'DE014': {
         'format': 'mat',
         'sensor': 'DE',
         'classes': {
-            "Normal": "cwru/*/normal.mat",
-            "Ball": "cwru/*/B014.mat",
-            "Inner race": "cwru/*/IR014.mat",
-            "Outer race": "cwru/*/OR014@*.mat"
+            "NORM": "cwru/*/normal.mat",
+            "BALL": "cwru/*/B014.mat",
+            "INNER": "cwru/*/IR014.mat",
+            "OUTER": "cwru/*/OR014@*.mat"
         }
     },
     'DE021': {
         'format': 'mat',
         'sensor': 'DE',
         'classes': {
-            "Normal": "cwru/*/normal.mat",
-            "Ball": "cwru/*/B021.mat",
-            "Inner race": "cwru/*/IR021.mat",
-            "Outer race": "cwru/*/OR021@*.mat"
+            "NORM": "cwru/*/normal.mat",
+            "BALL": "cwru/*/B021.mat",
+            "INNER": "cwru/*/IR021.mat",
+            "OUTER": "cwru/*/OR021@*.mat"
         }
     },
     'FE007': {
         'format': 'mat',
         'sensor': 'FE',
         'classes': {
-            "Normal": "cwru/*/normal.mat",
-            "Ball": "cwru/*/B007.mat",
-            "Inner race": "cwru/*/IR007.mat",
-            "Outer race": "cwru/*/OR007@*.mat"
+            "NORM": "cwru/*/normal.mat",
+            "BALL": "cwru/*/B007.mat",
+            "INNER": "cwru/*/IR007.mat",
+            "OUTER": "cwru/*/OR007@*.mat"
         }
     },
     'FE014': {
         'format': 'mat',
         'sensor': 'FE',
         'classes': {
-            "Normal": "cwru/*/normal.mat",
-            "Ball": "cwru/*/B014.mat",
-            "Inner race": "cwru/*/IR014.mat",
-            "Outer race": "cwru/*/OR014@*.mat"
+            "NORM": "cwru/*/normal.mat",
+            "BALL": "cwru/*/B014.mat",
+            "INNER": "cwru/*/IR014.mat",
+            "OUTER": "cwru/*/OR014@*.mat"
         }
     },
     'FE021': {
         'format': 'mat',
         'sensor': 'FE',
         'classes': {
-            "Normal": "cwru/*/normal.mat",
-            "Ball": "cwru/*/B021.mat",
-            "Inner race": "cwru/*/IR021.mat",
-            "Outer race": "cwru/*/OR021@*.mat"
+            "NORM": "cwru/*/normal.mat",
+            "BALL": "cwru/*/B021.mat",
+            "INNER": "cwru/*/IR021.mat",
+            "OUTER": "cwru/*/OR021@*.mat"
         }
     },
     'DE': {
         'format': 'mat',
         'sensor': 'DE',
         'classes': {
-            "Normal": "cwru/*/normal.mat",
-            "Ball": "cwru/*/B*.mat",
-            "Inner race": "cwru/*/IR*.mat",
-            "Outer race": "cwru/*/OR*@*.mat"
+            "NORM": "cwru/*/normal.mat",
+            "BALL": "cwru/*/B*.mat",
+            "INNER": "cwru/*/IR*.mat",
+            "OUTER": "cwru/*/OR*@*.mat"
         }
     },
     'FE': {
         'format': 'mat',
         'sensor': 'FE',
         'classes': {
-            "Normal": "cwru/*/normal.mat",
-            "Ball": "cwru/*/B*.mat",
-            "Inner race": "cwru/*/IR*.mat",
-            "Outer race": "cwru/*/OR*@*.mat"
+            "NORM": "cwru/*/normal.mat",
+            "BALL": "cwru/*/B*.mat",
+            "INNER": "cwru/*/IR*.mat",
+            "OUTER": "cwru/*/OR*@*.mat"
         }
     },
     'CWRUA4': {
         'format': 'mat',
         'sensor': 'DE',
         'classes': {
-            "Normal": "cwru/0/normal.mat",
-            "Ball": "cwru/0/B*.mat",
-            "Inner race": "cwru/0/IR*.mat",
-            "Outer race": "cwru/0/OR*.mat"
+            "NORM": "cwru/0/normal.mat",
+            "BALL": "cwru/0/B*.mat",
+            "INNER": "cwru/0/IR*.mat",
+            "OUTER": "cwru/0/OR*.mat"
         }},
     'CWRUB4': {
         'format': 'mat',
         'sensor': 'DE',
         'classes': {
-            "Normal": "cwru/3/normal*.mat",
-            "Ball": "cwru/3/B*.mat",
-            "Inner race": "cwru/3/IR*.mat",
-            "Outer race": "cwru/3/OR*.mat"
+            "NORM": "cwru/3/normal*.mat",
+            "BALL": "cwru/3/B*.mat",
+            "INNER": "cwru/3/IR*.mat",
+            "OUTER": "cwru/3/OR*.mat"
         }},
     'CWRUA2': {
         'format': 'mat',
         'sensor': 'DE',
         'classes': {
-            "Normal": "cwru/0/normal.mat",
+            "NORM": "cwru/0/normal.mat",
             "Fault": "cwru/0/*0*.mat",
         }},
     'CWRUB2': {
         'format': 'mat',
         'sensor': 'DE',
         'classes': {
-            "Normal": "cwru/3/normal*.mat",
+            "NORM": "cwru/3/normal*.mat",
             "Fault": "cwru/3/*0*.mat",
         }},
     'CWRUA3': {
         'format': 'mat',
         'sensor': 'DE',
         'classes': {
-            "Normal": "cwru/0/normal.mat",
-            "Inner race": "cwru/0/IR*.mat",
-            "Outer race": "cwru/0/OR*.mat"
+            "NORM": "cwru/0/normal.mat",
+            "INNER": "cwru/0/IR*.mat",
+            "OUTER": "cwru/0/OR*.mat"
               }},
     'CWRUB3': {
         'format': 'mat',
         'sensor': 'DE',
         'classes': {
-            "Normal": "cwru/3/normal*.mat",
-            "Inner race": "cwru/3/IR*.mat",
-            "Outer race": "cwru/3/OR*.mat"
+            "NORM": "cwru/3/normal*.mat",
+            "INNER": "cwru/3/IR*.mat",
+            "OUTER": "cwru/3/OR*.mat"
         }
     },
     # CWRUA 2-class Normal/Inner
@@ -146,8 +146,8 @@ DATASETS = {
         'format': 'mat',
         'sensor': 'DE',
         'classes': {
-            "Normal": "cwru/0/normal.mat",
-            "Inner race": "cwru/0/IR*.mat",
+            "NORM": "cwru/0/normal.mat",
+            "INNER": "cwru/0/IR*.mat",
         }
     },
     #
@@ -157,24 +157,24 @@ DATASETS = {
     'CAL2-NI-30K': {
         'format': 'npy',
         'classes': {
-            "Normal": "mandelli/test_H0/*/30000/*accelerometer*.npy",
-            "Inner race": "mandelli/test_A_fault_cuscinetto_pitting/*/30000/*accelerometer*.npy"
+            "NORM": "mandelli/test_H0/*/30000/*accelerometer*.npy",
+            "INNER": "mandelli/test_A_fault_cuscinetto_pitting/*/30000/*accelerometer*.npy"
         }
     },
     # CAL 2-class Normal/Inner
     'CAL2-NI-20K': {
         'format': 'npy',
         'classes': {
-            "Normal": "mandelli/test_H0/*/20000/*accelerometer*.npy",
-            "Inner race": "mandelli/test_A_fault_cuscinetto_pitting/*/20000/*accelerometer*.npy"
+            "NORM": "mandelli/test_H0/*/20000/*accelerometer*.npy",
+            "INNER": "mandelli/test_A_fault_cuscinetto_pitting/*/20000/*accelerometer*.npy"
         }
     }    ,
     # CAL 2-class Normal/Inner
     'CAL2-NI-1K': {
         'format': 'npy',
         'classes': {
-            "Normal": "mandelli/test_H0/*/1000/*accelerometer*.npy",
-            "Inner race": "mandelli/test_A_fault_cuscinetto_pitting/*/1000/*accelerometer*.npy"
+            "NORM": "mandelli/test_H0/*/1000/*accelerometer*.npy",
+            "INNER": "mandelli/test_A_fault_cuscinetto_pitting/*/1000/*accelerometer*.npy"
         }
     }
 }
@@ -220,7 +220,7 @@ class MyDataModule(LightningDataModule):
 
         # Load data
         print(f"Loading source dataset: {self.source}")
-        x_src_train, y_src_train, x_src_test, y_src_test = read_dataset(self.data_dir,
+        x_src_train, y_src_train, x_src_test, y_src_test, class_lbls_src = read_dataset(self.data_dir,
                                                                         self.source_conf,
                                                                         test_size=self.test_size,
                                                                         input_length=self.input_length,
@@ -228,12 +228,19 @@ class MyDataModule(LightningDataModule):
                                                                         test_overlap=0.8)
 
         print(f"Loading target dataset: {self.target}")
-        x_trg_train, y_trg_train, x_trg_test, y_trg_test = read_dataset(self.data_dir,
+        x_trg_train, y_trg_train, x_trg_test, y_trg_test, class_lbls_trg = read_dataset(self.data_dir,
                                                                         self.target_conf,
                                                                         test_size=self.test_size,
                                                                         input_length=self.input_length,
                                                                         train_overlap=0.8,
                                                                         test_overlap=0.8)
+
+
+        # Check that source and target labels' order match
+        for i in range(len(class_lbls_src)):
+            assert(class_lbls_src[i] == class_lbls_trg[i])
+        self.class_lbls = class_lbls_src
+
         # Cut to the same length
         src_sz = x_src_train.size(0)
         trg_sz = x_trg_train.size(0)
@@ -354,8 +361,13 @@ def read_dataset(root_dir, conf, input_length, train_overlap, test_overlap, test
     """Read dataset from disk and split it into samples"""
     x_train = []
     x_test = []
+    class_lbls = []
+
     for i, (class_name, class_regex) in enumerate(conf['classes'].items()):
         print(f'Loading class {class_name} with index {i}')
+
+        # save class label
+        class_lbls.append(class_name)
 
         # One class can be split into multiple .mat files, so load them all
         class_sampl_train = []
@@ -412,7 +424,7 @@ def read_dataset(root_dir, conf, input_length, train_overlap, test_overlap, test
     x_train = minmax_normalization(x_train)
     x_test = minmax_normalization(x_test)
 
-    return x_train.unsqueeze(1), y_train, x_test.unsqueeze(1), y_test
+    return x_train.unsqueeze(1), y_train, x_test.unsqueeze(1), y_test, class_lbls
 
 
 def rebalance_by_removal(classes_samples: List):
