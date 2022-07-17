@@ -141,22 +141,6 @@ DATASETS = {
             "Outer race": "cwru/3/OR*.mat"
         }
     },
-    # CAL 2-class Normal/Inner
-    'CAL2-NI': {
-        'format': 'npy',
-        'classes': {
-            "Normal": "mandelli/test_H0/01_prove_lunghe_acc_cuscinetto_alto_basso/1000/*accelerometer*.npy",
-            "Inner race": "mandelli/test_A_fault_cuscinetto_pitting/01_prove_lunghe_acc_cuscinetto/1000/*accelerometer*.npy"
-        }
-    },
-    # CAL 2-class Normal/Inner with reversed classes
-    'CAL2-NI-REVERSED': {
-        'format': 'npy',
-        'classes': {
-            "Inner race": "mandelli/test_A_fault_cuscinetto_pitting/01_prove_lunghe_acc_cuscinetto/1000/*accelerometer*.npy",
-            "Normal": "mandelli/test_H0/01_prove_lunghe_acc_cuscinetto_alto_basso/1000/*accelerometer*.npy",
-        }
-    },
     # CWRUA 2-class Normal/Inner
     'CWRUA2-NI': {
         'format': 'mat',
@@ -166,6 +150,33 @@ DATASETS = {
             "Inner race": "cwru/0/IR*.mat",
         }
     },
+    #
+    # ==== CAL DATASET CONFIGURATIONS ===
+    #
+    # CAL 2-class Normal/Inner
+    'CAL2-NI-30K': {
+        'format': 'npy',
+        'classes': {
+            "Normal": "mandelli/test_H0/*/30000/*accelerometer*.npy",
+            "Inner race": "mandelli/test_A_fault_cuscinetto_pitting/*/30000/*accelerometer*.npy"
+        }
+    },
+    # CAL 2-class Normal/Inner
+    'CAL2-NI-20K': {
+        'format': 'npy',
+        'classes': {
+            "Normal": "mandelli/test_H0/*/20000/*accelerometer*.npy",
+            "Inner race": "mandelli/test_A_fault_cuscinetto_pitting/*/20000/*accelerometer*.npy"
+        }
+    }    ,
+    # CAL 2-class Normal/Inner
+    'CAL2-NI-1K': {
+        'format': 'npy',
+        'classes': {
+            "Normal": "mandelli/test_H0/*/1000/*accelerometer*.npy",
+            "Inner race": "mandelli/test_A_fault_cuscinetto_pitting/*/1000/*accelerometer*.npy"
+        }
+    }
 }
 
 
@@ -208,12 +219,15 @@ class MyDataModule(LightningDataModule):
         # only called on 1 GPU/TPU in distributed
 
         # Load data
+        print(f"Loading source dataset: {self.source}")
         x_src_train, y_src_train, x_src_test, y_src_test = read_dataset(self.data_dir,
                                                                         self.source_conf,
                                                                         test_size=self.test_size,
                                                                         input_length=self.input_length,
                                                                         train_overlap=0.8,
                                                                         test_overlap=0.8)
+
+        print(f"Loading target dataset: {self.target}")
         x_trg_train, y_trg_train, x_trg_test, y_trg_test = read_dataset(self.data_dir,
                                                                         self.target_conf,
                                                                         test_size=self.test_size,
@@ -341,7 +355,7 @@ def read_dataset(root_dir, conf, input_length, train_overlap, test_overlap, test
     x_train = []
     x_test = []
     for i, (class_name, class_regex) in enumerate(conf['classes'].items()):
-        print(f'[{i}] Loading class {class_name}')
+        print(f'Loading class {class_name} with index {i}')
 
         # One class can be split into multiple .mat files, so load them all
         class_sampl_train = []
