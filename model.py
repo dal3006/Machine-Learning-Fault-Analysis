@@ -197,8 +197,11 @@ class MyModel(pl.LightningModule):
         x_trg = self.encoder(x_trg)
         x_trg = x_trg.view(-1, x_trg.shape[1] * x_trg.shape[2])
 
-        # if self.hparams.alpha > 0:
-        mmd_loss = self.mmd(x_src, x_trg)
+        if self.hparams.alpha > 0:
+            mmd_loss = self.mmd(x_src, x_trg)
+        else:
+            with torch.no_grad():
+                mmd_loss = self.mmd(x_src, x_trg)
         self.log("mmd_loss/train", mmd_loss)
         # else:
         #     mmd_loss = 0.0
@@ -206,7 +209,7 @@ class MyModel(pl.LightningModule):
         if self.hparams.beta > 0:
             entropy_src = self.hloss(x_src)
             entropy_trg = self.hloss(x_trg)
-            entropy_sum = (entropy_src+entropy_trg) * self.hparams.beta
+            entropy_sum = entropy_src+entropy_trg
             self.log("entropy_src/train", entropy_src)
             self.log("entropy_trg/train", entropy_trg)
             self.log("entropy_sum/train", entropy_sum)
@@ -216,7 +219,7 @@ class MyModel(pl.LightningModule):
         # Classify
         x_src = self.classifier(x_src)
         classif_loss = self.crossentropy_loss(x_src, y_src)
-        total_loss = classif_loss + mmd_loss * self.hparams.alpha + entropy_sum
+        total_loss = classif_loss + mmd_loss * self.hparams.alpha + entropy_sum * self.hparams.beta
         self.log("classificaiton_loss/train", classif_loss)
         self.log("total_loss/train", total_loss)
         return total_loss
