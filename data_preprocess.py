@@ -1,5 +1,4 @@
 #%%
-#
 
 from nptdms import TdmsFile
 import glob
@@ -14,20 +13,25 @@ def plot_signal(signal):
     # print(f"sig min: {signal.min()}")
     # print(f"sig max: {signal.max()}")
     # create a matplotlib plot
-    plt.figure()
+    plt.figure(figsize=(20,2))
     plt.plot(signal)
     plt.show()
 
-paths = glob.glob("dataset/mandelli/test_H0/01_prove_lunghe_acc_cuscinetto_alto_basso/1000/*accelerometer*.tdms")
-# paths = glob.glob("dataset/mandelli/test_A_fault_cuscinetto_pitting/01_prove_lunghe_acc_cuscinetto/1000/*accelerometer*.tdms")
+paths = []
+paths += glob.glob("dataset/mandelli/test_H0/01_prove_lunghe_acc_cuscinetto_alto_basso/*/*accelerometer*.tdms")
+paths += glob.glob("dataset/mandelli/test_H0/03_su_e_giu_acc_cuscinetto/*/*accelerometer*.tdms")
+paths += glob.glob("dataset/mandelli/test_H0/09_prove_lunghe_acc_cuscinetto_basso_alto/*/*accelerometer*.tdms")
+paths += glob.glob("dataset/mandelli/test_A_fault_cuscinetto_pitting/01_prove_lunghe_acc_cuscinetto/*/*accelerometer*.tdms")
+paths += glob.glob("dataset/mandelli/test_A_fault_cuscinetto_pitting/02_prove_lunghe_4corse_su_giu/*/*accelerometer*.tdms")
 
 # convert CAL dataset from tqdm to npy ready
 for filepath in paths:
+    print("==== Reading file ====")
     print(filepath)
     tdms_file = TdmsFile.read(filepath)
     for group in tdms_file.groups():
         group_name = group.name
-        print(f"group: {group_name}")
+        # print(f"group: {group_name}")
 
         # extract elevation and signal from group
         elevation = None
@@ -59,9 +63,13 @@ for filepath in paths:
         # Find where elevation is between margins and
         # keep only the signal where elevation is between them
         elevation_bound = (elevation >= elevation_bound_lo) & (elevation <= elevation_bound_hi)
+
+
+        plot_signal(acc_x)
+        plot_signal(elevation)
+        #TODO: split files with multiple up-down runs into different signals instead of merging all into one signal
         acc_x = acc_x[elevation_bound]
         elevation = elevation[elevation_bound]
-
         plot_signal(acc_x)
         plot_signal(elevation)
 
