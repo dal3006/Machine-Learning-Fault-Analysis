@@ -258,8 +258,15 @@ class MyModel(pl.LightningModule):
 
             # Confusion matrix
             cm = self.metrics.cm(y_pred, y_true)
-            matplotlib.pyplot.figure(figsize=(10, 7))
-            fig_ = sns.heatmap(cm.cpu(), annot=True, fmt='.2f', cmap='coolwarm').get_figure()
+            matplotlib.pyplot.figure(figsize=(18, 13))
+
+            g = sns.heatmap(cm.cpu(), annot=True, fmt='.2f', cmap='coolwarm', annot_kws={'size': 25}, xticklabels=self.trainer.datamodule.class_lbls, yticklabels=self.trainer.datamodule.class_lbls)
+            g.set_yticklabels(g.get_yticklabels(), rotation = 90, fontsize=25)
+            g.set_xticklabels(g.get_xticklabels(), rotation = 0, fontsize=25)
+            g.set_xlabel('Predicted class', fontsize=25, labelpad=35)
+            g.set_ylabel('True class', fontsize=25, labelpad=35)
+            g.collections[0].colorbar.ax.tick_params(labelsize=25)
+            fig_ = g.get_figure()
             matplotlib.pyplot.close(fig_)
             self.logger.experiment.add_figure("cm/val/" + dataloader_name, fig_, self.current_epoch)
 
