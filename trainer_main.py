@@ -18,7 +18,6 @@ parser = MyModel.add_argparse_args(parser)
 parser = pl.Trainer.add_argparse_args(parser)
 logparser = parser.add_argument_group("MyLogger")
 logparser.add_argument("--experiment_name", "-n", type=str, default="default")
-parser.add_argument('--grid_search', default="false", type=lambda x: (str(x).lower() in ['true', '1', 'yes']), help="Run grid search. Overrides --alpha and --beta.")
 parser.add_argument('--resume_chkp_path', type=str, help="Path to a specific checkpoint to restore. Must exist.")
 parser.add_argument('--resume_chkp_last', default="false", type=lambda x: (str(x).lower() in ['true', '1', 'yes']), help="Restore last checkpoint if exists. Useful for resuming training on spot instances.")
 # Read args
@@ -73,24 +72,4 @@ def train(args_dict):
 
 
 args_dict = vars(args)
-
-# GRID SEARCH
-# ---
-if args.grid_search:
-    print("grid search")
-    csv_filename = f"{pd.datetime.now().strftime('%Y%m%d_%H%M%S')}_grid_search_results.csv"
-    df = pd.DataFrame({'alpha': [],'beta': [], 'accuracy': []})
-    for a in [1, 0.1 , 0.01, 0.001]:
-        for b in [0, 10, 1, 0.1 , 0.01, 0.001]:
-            print(f"a={a}, b={b}")
-            # Override args
-            args_dict["alpha"] = a
-            args_dict["beta"] = b
-            # Train
-            best_accu = train(args_dict)
-            # Log results
-            df = df.append({'alpha': a, 'beta': b, 'accuracy': best_accu}, ignore_index=True)
-            # save dataframe in a csv with current time in filename
-            df.to_csv(csv_filename)
-else:
-    train(args_dict)
+train(args_dict)
