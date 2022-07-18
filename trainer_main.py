@@ -19,7 +19,8 @@ parser = pl.Trainer.add_argparse_args(parser)
 logparser = parser.add_argument_group("MyLogger")
 logparser.add_argument("--experiment_name", "-n", type=str, default="default")
 parser.add_argument('--resume_chkp_path', type=str, help="Path to a specific checkpoint to restore. Must exist.")
-parser.add_argument('--resume_chkp_last', default="false", type=lambda x: (str(x).lower() in ['true', '1', 'yes']), help="Restore last checkpoint if exists. Useful for resuming training on spot instances.")
+parser.add_argument('--resume_chkp_last', action='store_true', default=False, required=False, help="Restore last checkpoint if exists. Useful for resuming training on spot instances.")
+
 # Read args
 args = parser.parse_args()
 
