@@ -447,7 +447,9 @@ def random_subset(x, length):
         x: tensor of shape (N, ...)
         returns shuffled and subsampled tensor of shape (length, ...)
     """
-    indices = torch.randperm(len(x))[:length] #TODO: seed this, otherwise pullutes train set on train reload
+    # seed this, otherwise pullutes train set when you restore a training session
+    torch.manual_seed(0)
+    indices = torch.randperm(len(x))[:length]
     return x[indices]
 
 def random_subset_parallel(parallel_list, length):
@@ -457,7 +459,9 @@ def random_subset_parallel(parallel_list, length):
         all tensors inside list must have the same length
         parallel_list: [x1, y1, ...]
     """
-    indices = torch.randperm(len(parallel_list[0]))[:length] #TODO: seed this, otherwise pullutes train set on train reload
+    # seed this, otherwise pullutes train set when you restore a training session
+    torch.manual_seed(0)
+    indices = torch.randperm(len(parallel_list[0]))[:length]
     for i in range(len(parallel_list)):
         parallel_list[i] = parallel_list[i][indices]
     return parallel_list

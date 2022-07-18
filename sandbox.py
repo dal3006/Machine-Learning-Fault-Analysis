@@ -8,6 +8,7 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+# %%
 labels = ["NORM", "INNER", "OUTER", "BALL"]
 cm = np.random.normal(0, 1, (4, 4))
 
@@ -24,3 +25,5 @@ g.collections[0].colorbar.ax.tick_params(labelsize=25)
 plt.show()
 
 # %%
+torch.manual_seed(0)
+torch.randperm(5)
