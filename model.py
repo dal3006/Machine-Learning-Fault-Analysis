@@ -173,7 +173,7 @@ class MyModel(pl.LightningModule):
         parser.add_argument("--beta", type=float, default=0)
         parser.add_argument("--weight_decay", type=float, default=1e-4)
         # OTHER HPARAMS
-        parser.add_argument("--num_classes", type=int, default=4)
+        parser.add_argument("--num_classes", type=int, default=3)
         parser.add_argument("--save_embeddings", default="false",
                             type=lambda x: (str(x).lower() in ['true', '1', 'yes']))
         return parent_parser
@@ -241,7 +241,7 @@ class MyModel(pl.LightningModule):
         # this is very useful when combined with grid search
         # and tensorboard hparams tab
         if dataloader_idx == 1:
-            self.log("hp_metric", accu)
+            self.log("hp_metric", accu, add_dataloader_idx=False)
 
         return {'loss': loss, 'y_pred': y_pred, 'y_true': y_true, 'embeddings': embeddings, 'dataloader_idx': dataloader_idx}
 
