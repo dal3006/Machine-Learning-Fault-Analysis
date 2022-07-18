@@ -205,8 +205,8 @@ class MyDataModule(LightningDataModule):
     def add_argparse_args(parent_parser):
         parser = parent_parser.add_argument_group("MyDataModule")
         parser.add_argument("--data_dir", type=str, default="./dataset/")
-        parser.add_argument("--source", type=str, default="CWRUA")
-        parser.add_argument("--target", type=str, default="CWRUB")
+        parser.add_argument("--source", type=str, default="CWRUA3")
+        parser.add_argument("--target", type=str, default="CWRUB3")
         parser.add_argument("--test_size", type=float, default=0.2)
         parser.add_argument("--input_length", type=int, default=256)
         parser.add_argument("--batch_size", type=int, default=128)

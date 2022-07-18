@@ -80,7 +80,7 @@ if args.grid_search:
     print("grid search")
     csv_filename = f"{pd.datetime.now().strftime('%Y%m%d_%H%M%S')}_grid_search_results.csv"
     df = pd.DataFrame({'alpha': [],'beta': [], 'accuracy': []})
-    for a in [0, 10, 1, 0.1 , 0.01, 0.001]:
+    for a in [1, 0.1 , 0.01, 0.001]:
         for b in [0, 10, 1, 0.1 , 0.01, 0.001]:
             print(f"a={a}, b={b}")
             # Override args
