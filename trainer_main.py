@@ -77,12 +77,11 @@ args_dict = vars(args)
 # GRID SEARCH
 # ---
 if args.grid_search:
-    possible_values = [0, 0.1, 0.01, 0.001, 0.0001, 0.00001,  0.000001]
     print("grid search")
     csv_filename = f"{pd.datetime.now().strftime('%Y%m%d_%H%M%S')}_grid_search_results.csv"
     df = pd.DataFrame({'alpha': [],'beta': [], 'accuracy': []})
-    for a in possible_values:
-        for b in possible_values: # 0.01 not good
+    for a in [0, 10, 1, 0.1 , 0.01, 0.001]:
+        for b in [0, 10, 1, 0.1 , 0.01, 0.001]:
             print(f"a={a}, b={b}")
             # Override args
             args_dict["alpha"] = a
