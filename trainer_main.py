@@ -53,7 +53,7 @@ def train(args_dict):
         bestaccu_callback,
         ModelSummary(max_depth=2),
         # Early stop if accuracy stops improving
-        EarlyStopping(monitor="accuracy/val/dataloader_idx_1", min_delta=0.0, patience=60, mode="max"),
+        EarlyStopping(monitor="accuracy/val/dataloader_idx_1", min_delta=0.001, patience=20, mode="max"),
         # Save most recent weights on each epoch
         ModelCheckpoint(dirpath="./autorestore/", filename=".autorestore", save_last=True),
         LearningRateMonitor()
