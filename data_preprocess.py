@@ -5,7 +5,7 @@ import glob
 import os
 import matplotlib.pyplot as plt
 import numpy as np
-
+import pandas as pd
 #%%
 
 def plot_signal(signal):
@@ -73,6 +73,9 @@ for filepath in paths:
         plot_signal(acc_x)
         plot_signal(elevation)
 
+        # df = pd.DataFrame({'x': acc_x[0:]})
+        # df.to_csv('mandelli_fullsig.csv')
+
         # save signal to file with same name as tdms file appending _x_cleaned.npy
         savepath = filepath.replace(".tdms", "_x_cleaned.npy")
         print(f"saving to {savepath}")
@@ -84,8 +87,11 @@ for filepath in paths:
 from data import minmax_normalization
 import torch
 
-# paths = glob.glob("dataset/mandelli/test_H0/01_prove_lunghe_acc_cuscinetto_alto_basso/1000/*accelerometer*.npy")
-paths = glob.glob("dataset/mandelli/test_A_fault_cuscinetto_pitting/01_prove_lunghe_acc_cuscinetto/1000/*accelerometer*.npy")
+VELOCITY="1000"
+VELOCITY="30000"
+
+paths = glob.glob("dataset/mandelli/test_H0/01_prove_lunghe_acc_cuscinetto_alto_basso/"+VELOCITY+"/*accelerometer*.npy")
+# paths = glob.glob("dataset/mandelli/test_A_fault_cuscinetto_pitting/01_prove_lunghe_acc_cuscinetto/1000/*accelerometer*.npy")
 
 for filepath in paths:
     # read numpy file
@@ -95,6 +101,10 @@ for filepath in paths:
     plt.figure()
     plt.plot(sig)
     plt.show()
+
+    df = pd.DataFrame({'x': sig})
+    df.to_csv('mandelli_sample_'+VELOCITY+'.csv')
+
 
     sig_tensor = torch.tensor(sig).unsqueeze(0)
     sig_tensor = minmax_normalization(sig_tensor)
