@@ -17,7 +17,7 @@ DATASETS = {
         'sensor': 'DE',
         'classes': {
             "NORM": "cwru/*/normal.mat",
-            "BALL": "cwru/*/B007.mat",
+            # "BALL": "cwru/*/B007.mat",
             "INNER": "cwru/*/IR007.mat",
             "OUTER": "cwru/*/OR007@*.mat"
         }
@@ -27,7 +27,7 @@ DATASETS = {
         'sensor': 'DE',
         'classes': {
             "NORM": "cwru/*/normal.mat",
-            "BALL": "cwru/*/B014.mat",
+            # "BALL": "cwru/*/B014.mat",
             "INNER": "cwru/*/IR014.mat",
             "OUTER": "cwru/*/OR014@*.mat"
         }
@@ -37,7 +37,7 @@ DATASETS = {
         'sensor': 'DE',
         'classes': {
             "NORM": "cwru/*/normal.mat",
-            "BALL": "cwru/*/B021.mat",
+            # "BALL": "cwru/*/B021.mat",
             "INNER": "cwru/*/IR021.mat",
             "OUTER": "cwru/*/OR021@*.mat"
         }
@@ -47,7 +47,7 @@ DATASETS = {
         'sensor': 'FE',
         'classes': {
             "NORM": "cwru/*/normal.mat",
-            "BALL": "cwru/*/B007.mat",
+            # "BALL": "cwru/*/B007.mat",
             "INNER": "cwru/*/IR007.mat",
             "OUTER": "cwru/*/OR007@*.mat"
         }
@@ -57,7 +57,7 @@ DATASETS = {
         'sensor': 'FE',
         'classes': {
             "NORM": "cwru/*/normal.mat",
-            "BALL": "cwru/*/B014.mat",
+            # "BALL": "cwru/*/B014.mat",
             "INNER": "cwru/*/IR014.mat",
             "OUTER": "cwru/*/OR014@*.mat"
         }
@@ -67,7 +67,7 @@ DATASETS = {
         'sensor': 'FE',
         'classes': {
             "NORM": "cwru/*/normal.mat",
-            "BALL": "cwru/*/B021.mat",
+            # "BALL": "cwru/*/B021.mat",
             "INNER": "cwru/*/IR021.mat",
             "OUTER": "cwru/*/OR021@*.mat"
         }
@@ -77,7 +77,7 @@ DATASETS = {
         'sensor': 'DE',
         'classes': {
             "NORM": "cwru/*/normal.mat",
-            "BALL": "cwru/*/B*.mat",
+            # "BALL": "cwru/*/B*.mat",
             "INNER": "cwru/*/IR*.mat",
             "OUTER": "cwru/*/OR*@*.mat"
         }
@@ -87,7 +87,7 @@ DATASETS = {
         'sensor': 'FE',
         'classes': {
             "NORM": "cwru/*/normal.mat",
-            "BALL": "cwru/*/B*.mat",
+            # "BALL": "cwru/*/B*.mat",
             "INNER": "cwru/*/IR*.mat",
             "OUTER": "cwru/*/OR*@*.mat"
         }
@@ -498,6 +498,8 @@ if __name__ == '__main__':
     """Visualize some batches of data"""
     from argparse import ArgumentParser
     import matplotlib.pyplot as plt
+    import pandas as pd
+
     # PARSE ARGS
     parser = ArgumentParser()
     parser = MyDataModule.add_argparse_args(parser)
@@ -518,6 +520,10 @@ if __name__ == '__main__':
             plt.plot(sig.squeeze(0))
             plt.title(f'[SOURCE DATASET TRAIN] Class {class_idx} sample #{i}')
             plt.show()
+
+            df = pd.DataFrame({'x': sig.squeeze(0)})
+            df.to_csv(f'artifacts/samples/class{class_idx}_sample{i}.csv')
+
 
     # Preview target validation batch (first batch, val dataset is not mixed)
     # x_t, y_t = next(iter(data_module.val_dataloader()[1]))

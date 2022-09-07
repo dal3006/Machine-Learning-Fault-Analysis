@@ -21,7 +21,7 @@
 
 
 grid run --datastore_name "cwru" --use_spot --auto_resume --instance_type "g4dn.xlarge" \
-    trainer_main.py --data_dir "/datastores/" --resume_chkp_last --max_epochs 70 \
+    trainer_main.py --data_dir "/datastores/" --resume_chkp_last --max_epochs 90 \
     --accelerator gpu --gpus 1 \
-    --experiment_name grid_search_resnext \
-    --alpha "[0, 0.001, 0.01, 0.1, 1, 10]" --beta "[0, 0.001, 0.01, 0.1, 1, 10]"
+    --experiment_name multidataset_eval \
+    --source "[DE007, DE014, DE021, FE007, FE014, FE021, DE, FE]" --target "[DE007, DE014, DE021, FE007, FE014, FE021, DE, FE]" --num_classes 3
