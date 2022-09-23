@@ -1,6 +1,6 @@
 # Machine-Learning-Fault-Analysis
 
-This repo contains research code related to my master's theses.
+This repo contains research code related to my master's thesis.
 The project consists in a PyTorch model which is able to perform fault detection and isolation using vibrations coming from ball bearings.
 
 The project aims at performing fault detection on unlabeled datasets never seen by the model. We achieve this by making heavy use of state-of-the-art transfer learning techniques and semi-supervised training.

@@ -65,21 +65,34 @@ for filepath in paths:
         elevation_bound = (elevation >= elevation_bound_lo) & (elevation <= elevation_bound_hi)
 
 
-        plot_signal(acc_x)
-        plot_signal(elevation)
+        # crop acc_x to only between 10% and 50% of the length
+        acc_x = acc_x[int(len(acc_x)*0.13):int(len(acc_x)*0.5)]
+        df = pd.DataFrame({'x': acc_x[0:]})
+        # downsample to 1/10 of the original size
+        df = df.iloc[::100]
+        df.to_csv('artifacts/mandelli_fullsig.csv')
+
+        elevation = elevation[int(len(elevation)*0.13):int(len(elevation)*0.5)]
+        df = pd.DataFrame({'x': elevation[0:]})
+        df = df.iloc[::100]
+        df.to_csv('artifacts/mandelli_fullpos.csv')
+        break
+
+        # plot_signal(acc_x)
+        # plot_signal(elevation)
+
         #TODO: split files with multiple up-down runs into different signals instead of merging all into one signal
         acc_x = acc_x[elevation_bound]
         elevation = elevation[elevation_bound]
         plot_signal(acc_x)
         plot_signal(elevation)
 
-        # df = pd.DataFrame({'x': acc_x[0:]})
-        # df.to_csv('mandelli_fullsig.csv')
 
         # save signal to file with same name as tdms file appending _x_cleaned.npy
         savepath = filepath.replace(".tdms", "_x_cleaned.npy")
         print(f"saving to {savepath}")
         np.save(savepath, acc_x)
+    break
 
 
 

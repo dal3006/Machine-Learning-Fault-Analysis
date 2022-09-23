@@ -15,9 +15,9 @@
                 "--batch_size",
                 "25",
                 "--source",
-                "CAL2-NI",
+                "CWRUA4",
                 "--target",
-                "CWRUA2-NI",
+                "CWRUB4",
             ]
         },
         {
@@ -48,6 +48,30 @@
                 "cpu",
                 // "--max_epochs",
                 // "1"
+            ]
+        },
+        {
+            "name": "TDM_CWRU_CAL",
+            "type": "python",
+            "request": "launch",
+            "program": "trainer_main.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": [
+                "--source",
+                "CWRUA2-NI",
+                "--target",
+                "CAL2-NI-30K",
+                "--num_classes",
+                "2",
+                "--save_embeddings",
+                "true",
+                "--experiment_name",
+                "TDM_CWRU_CAL",
+                "--accelerator",
+                "gpu",
+                "--gpus",
+                "1"
             ]
         },
         {
