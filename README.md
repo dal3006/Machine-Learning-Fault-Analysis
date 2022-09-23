@@ -1,10 +1,10 @@
 # Machine-Learning-Fault-Analysis
 
-This repo contains research code related to my master's thesis "An improved transfer learning approach for Intelligent Fault Diagnosis with application to ball bearings".
+This project contains research code related to my master's thesis "An improved transfer learning approach for Intelligent Fault Diagnosis with application to ball bearings".
 
-This project contains the PyTorch code for the proposed FRAN-X model. The model can perform fault detection/isolation of ball bearings faults using vibrations collected from industrial machinery.
+This repo contains the PyTorch code for the proposed FRAN-X model. The model can perform fault detection/isolation of ball bearings faults using vibrations collected from industrial machinery.
 
-This project aims at performing fault detection on unlabeled datasets never seen by the model. This is achieved using state-of-the-art transfer learning techniques and semi-supervised training.
+The proposed model can perform fault isolation of unlabeled datasets. This is achieved using state-of-the-art transfer learning techniques and semi-supervised training.
 
 # Usage
 
